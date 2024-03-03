@@ -105,7 +105,7 @@ InfoNode* findVariableInScopeAndGetArgCount(ScopeNode* head, const char* name) {
 create new scopenode
 */
 ScopeNode* createScopeNode() {
-    ScopeNode* newNode = (ScopeNode*)malloc(sizeof(ScopeNode));
+    ScopeNode* newNode = malloc(sizeof(ScopeNode));
     if (newNode == NULL) {
         printf("Memory allocation failed\n");
         exit(1);

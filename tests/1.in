@@ -1,6 +1,16 @@
-int x() {
-    while (x 
-    < 
-    10)
-    ;
+int x, y;
+int f(int x, int y, int z) {
 }
+
+int g() {
+  int x, y;
+  if (x == y) {
+    g();
+  }
+  else{
+  }
+  return 5;
+}
+
+
+

@@ -2,6 +2,8 @@
     "files.associations": {
         "scanner.h": "c",
         "stdlib.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "ast.h": "c",
+        "string.h": "c"
     }
 }

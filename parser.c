@@ -9,6 +9,7 @@ description: syntax analyzer for c--
 #include <stdbool.h>
 #include "scanner.h"
 #include "symbolTable.h"
+#include "ast.h"
 
 extern int get_token();
 extern int line_num;
@@ -19,6 +20,9 @@ Token curr_tok;
 int currentScope = 0;
 ScopeNode* symbolTable = NULL;
 char* currentID;
+
+extern int print_ast_flag;
+
 
 char* token_name[] = {
   "UNDEF",
@@ -54,12 +58,12 @@ char* token_name[] = {
 //function prototypes
 void match(Token expected);
 void prog();
-void func_defn();
+ASTnode* func_defn();
 void type();
 void opt_formals(int* argCount);
 void opt_var_decls();
-void opt_stmt_list();
-void stmt();
+ASTnode* opt_stmt_list();
+ASTnode* stmt();
 void fn_call();
 void opt_expr_list(int* argumentCount);
 void formals(int* argCount);
@@ -67,11 +71,12 @@ void var_decl();
 void id_list();
 void error(char* expected);
 void return_stmt();
-void arith_exp();
-void bool_exp();
-void relop();
+ASTnode* arith_exp();
+ASTnode* bool_exp();
+NodeType relop();
 void expr_list(int* argumentCount);
 void assg_stmt();
+ASTnode* if_stmt();
 
 
 //function declarations
@@ -134,14 +139,21 @@ void fn_call(){
     match(RPAREN);
 }
 
-void arith_exp() {
+ASTnode* arith_exp() {
+    ASTnode* ast_node = malloc(sizeof(ASTnode));
+
     if (curr_tok == ID){
+        //ast-print
+        ast_node->ntype = IDENTIFIER;
+        ast_node->nameF = malloc(strlen(lexeme) + 1);
+        strcpy(ast_node->nameF, lexeme);
+
         if (chk_decl_flag){
             currentID = lexeme;
             bool found = findFunctionOrVariableInAllScopesByNameAndType(symbolTable, currentID, "int variable");
             if (found){
                 match(ID);
-                return;
+                return ast_node;
             }
             else{
                 error("variable has not been declared");
@@ -149,16 +161,23 @@ void arith_exp() {
         }
         else{
             match(ID);
-            return;
+            return ast_node;
         } 
+        //might need to delete this
         match(ID);
     }
     else if(curr_tok == INTCON) {
+        //ast-print
+        ast_node->ntype = INTCONST;
+        ast_node->num = malloc(sizeof(int));
+        *(ast_node->num) = atoi(lexeme);
+
         match(INTCON);
     }
     else{
         error("invalid assignment right hand side");
     }
+    return ast_node;
 }
 
 /*
@@ -207,51 +226,63 @@ void return_stmt(){
     }
 }
 
-void relop(){
+NodeType relop(){
     if (curr_tok == opEQ){
         match(opEQ);
+        return EQ;
     }
     else if(curr_tok == opNE){
         match(opNE);
+        return NE;
     }
     else if(curr_tok == opLE){
         match(opLE);
+        return LE;
     }
     else if(curr_tok == opLT){
         match(opLT);
+        return LT;
     }
     else if(curr_tok == opGE){
         match(opGE);
+        return GE;
     }
     else if(curr_tok == opGT){
         match(opGT);
+        return GT;
     }
+    return DUMMY;
 }
 
-void bool_exp(){
-    arith_exp(); 
-    relop(); 
-    arith_exp();
+ASTnode* bool_exp(){
+    ASTnode* exp_ast = malloc(sizeof(ASTnode));
+    exp_ast->child0 = arith_exp(); 
+    exp_ast->ntype = relop(); 
+    exp_ast->child1 = arith_exp();
+    return exp_ast;
 }
 
-void if_stmt(){
+ASTnode* if_stmt(){
+    ASTnode* if_ast = malloc(sizeof(ASTnode));
     match(kwIF);
+    if_ast->ntype = IF;
     match(LPAREN);
-    bool_exp();
+    if_ast->child0 = bool_exp(); //expression is child0
     match(RPAREN);
     currentScope++;
     addScope(&symbolTable);
-    stmt();
+    if_ast->child1 = stmt(); //if expression is true
     currentScope--;
     deleteScope(&symbolTable);
     if (curr_tok == kwELSE){
         match(kwELSE);
         currentScope++;
         addScope(&symbolTable);
-        stmt();
+        if_ast->child2 = stmt();
         currentScope--;
         deleteScope(&symbolTable);
     }
+    return if_ast;
 }
 
 void while_stmt(){
@@ -266,9 +297,10 @@ void while_stmt(){
     deleteScope(&symbolTable);
 }
 
-void stmt() {
+ASTnode* stmt() {
+    ASTnode* stmt_ast = NULL;
     if (curr_tok == kwIF) {
-        if_stmt();
+        stmt_ast = if_stmt();
     } 
     else if (curr_tok == kwWHILE) {
         while_stmt();
@@ -296,7 +328,7 @@ void stmt() {
         currentScope++;
         addScope(&symbolTable);
 
-        opt_stmt_list();
+        stmt_ast = opt_stmt_list();
 
         // char* popo = token_name[curr_tok];
         // printf("here2 %s\n", popo);
@@ -311,14 +343,37 @@ void stmt() {
     else {
         error("Unexpected statement");
     }
+    return stmt_ast;
 }
 
-void opt_stmt_list(){
+ASTnode* opt_stmt_list(){
+    ASTnode* stmt_list_hd = malloc(sizeof(ASTnode));
+    stmt_list_hd->ntype = STMT_LIST;
+
+
     //tail recursion optimization
     while(curr_tok == ID || curr_tok == kwIF || curr_tok == kwWHILE || curr_tok == kwRETURN || curr_tok == LBRACE || curr_tok == SEMI){
-        stmt();
+        ASTnode* asmt_ast = stmt();
+
+        //set last element to new asmt_ast
+        if (stmt_list_hd->child0 == NULL) {
+            // First statement in the list
+            stmt_list_hd->child0 = asmt_ast; 
+        } else {
+            ASTnode* cur = stmt_list_hd;
+            while(cur->child1 != NULL){
+                cur = cur->child1;
+            }
+            cur->child1 = malloc(sizeof(ASTnode));
+            cur->child1->ntype = STMT_LIST;
+            cur->child1->child0 = asmt_ast;
+        }
     }
-    return;
+    //no need for a list since only one statement or also could be empty block
+    if (stmt_list_hd->child1 == NULL){
+        return stmt_list_hd->child0;
+    }
+    return stmt_list_hd;
 }
 
 void opt_var_decls() {
@@ -364,7 +419,10 @@ void type(){
     match(kwINT);
 }
 
-void func_defn(){
+ASTnode* func_defn(){
+    ASTnode* ast = malloc(sizeof(ASTnode));
+    ast->ntype = FUNC_DEF;
+    ast->nameF = currentID;
     int* argCount = malloc(sizeof(int));
     
     if (chk_decl_flag){
@@ -387,18 +445,29 @@ void func_defn(){
     addScope(&symbolTable);
 
     opt_formals(argCount);
+    ast->num = argCount;
 
     match(RPAREN);
     match(LBRACE);
+
+    //might need to allocate new memory for variable list
     opt_var_decls();
-    opt_stmt_list();
-    //printf("here\n");
+    ast->st_ref = symbolTable->variableList;
+
+    ASTnode* stmt_list_head = opt_stmt_list();
+    ast->child0 = stmt_list_head;
+
     match(RBRACE);
-    
+
+    //printSymbolTable(symbolTable);
+    if (print_ast_flag){
+        print_ast(ast);
+    }
+
     currentScope--;
     deleteScope(&symbolTable);
     
-    return;
+    return ast;
 }
 
 void var_decl(){
@@ -455,7 +524,7 @@ void prog(){
         match(ID);
 
         if (curr_tok == LPAREN) {
-            func_defn();
+            ASTnode* popo = func_defn();
             //printSymbolTable(symbolTable);
         } else {
 

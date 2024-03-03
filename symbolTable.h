@@ -11,7 +11,11 @@ typedef struct InfoNode {
     char name[100];
     char type[100];
     char info[256];
-    int* argCount;  
+
+    //for function
+    int* argCount; 
+
+    //next variable in scope
     struct InfoNode* next;
 } InfoNode;
 
