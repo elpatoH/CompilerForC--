@@ -30,7 +30,7 @@ void addVariableToScope(ScopeNode** head, const char* name, const char* type, co
 void addScope(ScopeNode** head);
 void deleteScope(ScopeNode** head);
 void printSymbolTable(ScopeNode* head);
-bool findVariableInScope(ScopeNode* head, const char* name, const char* type, const char* info);
+bool findVariableInScope(ScopeNode* head, const char* name, const char* type);
 InfoNode* findFunctionInScopeAndGetArgCount(ScopeNode* head, const char* name);
 bool findFunctionOrVariableInAllScopesByNameAndType(ScopeNode* head, const char* name, const char* type);
 InfoNode* findVariableInScopeAndGetArgCount(ScopeNode* head, const char* name);

@@ -5,7 +5,7 @@
 #include <stdbool.h>
 
 bool compareVariablesByName(const InfoNode* variable, const char* name);
-bool compareVariables(const InfoNode* variable, const char* name, const char* type, const char* info);
+bool compareVariables(const InfoNode* variable, const char* name, const char* type);
 bool findFunctionOrVariableInAllScopesByNameAndTypeHelper(ScopeNode* head, const char* name, const char* type);
 
 /*
@@ -55,7 +55,7 @@ bool findFunctionOrVariableInAllScopesByNameAndTypeHelper(ScopeNode* head, const
     if (head == NULL) return false;
     InfoNode* variable = head->variableList;
     while (variable != NULL) {
-        if (compareVariables(variable, name, type, "")) {
+        if (compareVariables(variable, name, type)) {
             return true;
         }
         variable = variable->next;
@@ -170,21 +170,21 @@ void printSymbolTable(ScopeNode* head) {
 /*
 helper function for comparing variables
 */
-bool compareVariables(const InfoNode* variable, const char* name, const char* type, const char* info) {
-    return strcmp(variable->name, name) == 0 && strcmp(variable->type, type) == 0 && strcmp(variable->info, info) == 0;
+bool compareVariables(const InfoNode* variable, const char* name, const char* type) {
+    return strcmp(variable->name, name) == 0 && strcmp(variable->type, type) == 0;
 }
 
 /*
 look for variable in passed in scope
 */
-bool findVariableInScope(ScopeNode* head, const char* name, const char* type, const char* info) {
+bool findVariableInScope(ScopeNode* head, const char* name, const char* type) {
     if (head == NULL) {
         return false;
     }
 
     InfoNode* variable = head->variableList;
     while (variable != NULL) {
-        if (compareVariables(variable, name, type, info)) {
+        if (compareVariables(variable, name, type)) {
             return true;
         }
         variable = variable->next;

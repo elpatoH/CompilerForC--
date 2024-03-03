@@ -2,6 +2,8 @@
 name: Daniel Gil
 class: cs453
 description: syntax analyzer for c--
+
+REFORMAT comment is for changing function names to something more fitting
 */
 
 #include <stdio.h>
@@ -64,49 +66,76 @@ void opt_formals(int* argCount);
 void opt_var_decls();
 ASTnode* opt_stmt_list();
 ASTnode* stmt();
-void fn_call();
-void opt_expr_list(int* argumentCount);
+ASTnode* fn_call();
+ASTnode* opt_expr_list(int* argumentCount);
 void formals(int* argCount);
 void var_decl();
 void id_list();
 void error(char* expected);
-void return_stmt();
+ASTnode* return_stmt();
 ASTnode* arith_exp();
 ASTnode* bool_exp();
 NodeType relop();
-void expr_list(int* argumentCount);
-void assg_stmt();
+ASTnode* expr_list(int* argumentCount);
+ASTnode* assg_stmt();
 ASTnode* if_stmt();
 
-
 //function declarations
-void expr_list(int* argumentCount){
-    arith_exp();
+ASTnode* expr_list(int* argumentCount){
+    ASTnode* ast_node = arith_exp();
     (*argumentCount)++;
-    if (curr_tok == COMMA){
-        match(COMMA);
-        expr_list(argumentCount);
-    }
+    return ast_node;
 }
 
-void opt_expr_list(int* argumentCount){
+ASTnode* opt_expr_list(int* argumentCount){
+    ASTnode* ast_expr_list = malloc(sizeof(ASTnode));
+    ast_expr_list->ntype = EXPR_LIST;
+    bool commaOn = false;
+
     //ε because expressions can be empty
-    if (curr_tok == ID || curr_tok == INTCON){
-        expr_list(argumentCount);
+    while (curr_tok == ID || curr_tok == INTCON || commaOn){
+        ASTnode* ast_node = expr_list(argumentCount);
+        commaOn = false;
+
+        //set last element to new asmt_ast
+        if (ast_expr_list->child0 == NULL) {
+            // First statement in the list
+            ast_expr_list->child0 = ast_node; 
+        } else {
+            ASTnode* cur = ast_expr_list;
+            while(cur->child1 != NULL){
+                cur = cur->child1;
+            }
+            cur->child1 = malloc(sizeof(ASTnode));
+            cur->child1->ntype = EXPR_LIST;
+            cur->child1->child0 = ast_node;
+        }
+        if (curr_tok == COMMA){
+            match(COMMA);
+            commaOn = true;
+        }
+        else{
+            break;
+        }
     }
-    return;
+
+    return ast_expr_list;
 }
 
-void fn_call(){
-    // currentID = lexeme;
-    // match(ID);
+ASTnode* fn_call(){
     ScopeNode* globalScope = getLastScope(symbolTable);
     char* functionID = currentID;
+
+    //initialize astnode
+    ASTnode* fn_call_ast = malloc(sizeof(ASTnode));
+    fn_call_ast->ntype = FUNC_CALL;
+    fn_call_ast->nameF = malloc(strlen(functionID) + 1);
+    strcpy(fn_call_ast->nameF, functionID);
 
     //add the currentID to the symbol table if not found in globalscope and top scope
     if (chk_decl_flag){
         
-        bool found = findVariableInScope(globalScope, functionID, "function", "");
+        bool found = findVariableInScope(globalScope, functionID, "function");
         bool foundLocal = findFunctionOrVariableInAllScopesByNameAndType(symbolTable, functionID, "int variable");
 
         //if it doesn't exists and the declaration is in the global scope
@@ -121,7 +150,7 @@ void fn_call(){
     match(LPAREN);
 
     int argumentCount = 0;
-    opt_expr_list(&argumentCount);
+    fn_call_ast->child0 = opt_expr_list(&argumentCount);
 
     if (chk_decl_flag){
         InfoNode* found = findFunctionInScopeAndGetArgCount(globalScope, functionID);
@@ -137,6 +166,7 @@ void fn_call(){
     }
     
     match(RPAREN);
+    return fn_call_ast;
 }
 
 ASTnode* arith_exp() {
@@ -164,7 +194,7 @@ ASTnode* arith_exp() {
             return ast_node;
         } 
         //might need to delete this
-        match(ID);
+        //match(ID);
     }
     else if(curr_tok == INTCON) {
         //ast-print
@@ -183,16 +213,24 @@ ASTnode* arith_exp() {
 /*
 match "=" from "ID =" then match ID or INT to end up matching SEMI to have "ID = ID || INT;"
 */
-void assg_stmt() {
+ASTnode* assg_stmt() {
+    //initalize ast node
+    ASTnode* ast_node = malloc(sizeof(ASTnode));
+    ast_node->ntype = ASSG;
+    ast_node->nameF = malloc(strlen(currentID) + 1);
+    strcpy(ast_node->nameF, currentID);
+
     if (chk_decl_flag){
         ScopeNode* current = symbolTable;
         while (current != NULL){
+            //REFORMAT
             InfoNode* node = findVariableInScopeAndGetArgCount(current, currentID);
             if (node != NULL){
                 match(opASSG);
-                arith_exp();
+                ASTnode* node = arith_exp();
+                ast_node->child0 = node;
                 match(SEMI);
-                return;
+                return ast_node;
             }
             current = current->next;
         }
@@ -202,9 +240,11 @@ void assg_stmt() {
     }
     else{
         match(opASSG);
-        arith_exp();
+        ASTnode* node = arith_exp();
+        ast_node->child0 = node;
         match(SEMI);
     }
+    return ast_node;
 }
 
 /*
@@ -212,18 +252,24 @@ match keyword "return" then
 if semi found then its just "return;" 
 else if it contains an id or integer then "return ID || INTCON"
 */
-void return_stmt(){
+ASTnode* return_stmt(){
+    //initialize ast node
+    ASTnode* return_ast = malloc(sizeof(ASTnode));
+    return_ast->ntype = RETURN;
+
     match(kwRETURN);
     if (curr_tok == SEMI){
+        return_ast->child0 = NULL;
         match(SEMI);
     }
     else if (curr_tok == ID || curr_tok == INTCON){
-        arith_exp();
+        return_ast->child0 = arith_exp();
         match(SEMI);
     }
     else{
         error("invalid return statement");
     }
+    return return_ast;
 }
 
 NodeType relop(){
@@ -285,16 +331,21 @@ ASTnode* if_stmt(){
     return if_ast;
 }
 
-void while_stmt(){
+ASTnode* while_stmt(){
+    //initalize ast node
+    ASTnode* while_ast = malloc(sizeof(ASTnode));
+    while_ast->ntype = WHILE;
+
     match(kwWHILE);
     match(LPAREN);
-    bool_exp();
+    while_ast->child0 = bool_exp();
     match(RPAREN);
     currentScope++;
     addScope(&symbolTable);
-    stmt();
+    while_ast->child1 = stmt();
     currentScope--;
     deleteScope(&symbolTable);
+    return while_ast;
 }
 
 ASTnode* stmt() {
@@ -303,25 +354,25 @@ ASTnode* stmt() {
         stmt_ast = if_stmt();
     } 
     else if (curr_tok == kwWHILE) {
-        while_stmt();
+        stmt_ast = while_stmt();
     } 
     else if (curr_tok == ID) {
         currentID = lexeme;
         match(ID);
         
         if (curr_tok == LPAREN){
-            fn_call();
+            stmt_ast = fn_call();
             match(SEMI);
         }
         else if (curr_tok == opASSG){
-            assg_stmt();
+            stmt_ast = assg_stmt();
         }
         else{
             error("unkown call");
         }
     }
     else if (curr_tok == kwRETURN) {
-        return_stmt();
+        stmt_ast = return_stmt();
     }
     else if (curr_tok == LBRACE) {
         match(LBRACE);
@@ -347,16 +398,16 @@ ASTnode* stmt() {
 }
 
 ASTnode* opt_stmt_list(){
-    ASTnode* stmt_list_hd = malloc(sizeof(ASTnode));
-    stmt_list_hd->ntype = STMT_LIST;
-
+    ASTnode* stmt_list_hd = NULL;
 
     //tail recursion optimization
     while(curr_tok == ID || curr_tok == kwIF || curr_tok == kwWHILE || curr_tok == kwRETURN || curr_tok == LBRACE || curr_tok == SEMI){
         ASTnode* asmt_ast = stmt();
 
         //set last element to new asmt_ast
-        if (stmt_list_hd->child0 == NULL) {
+        if (stmt_list_hd == NULL) {
+            stmt_list_hd = malloc(sizeof(ASTnode));
+            stmt_list_hd->ntype = STMT_LIST;
             // First statement in the list
             stmt_list_hd->child0 = asmt_ast; 
         } else {
@@ -369,10 +420,7 @@ ASTnode* opt_stmt_list(){
             cur->child1->child0 = asmt_ast;
         }
     }
-    //no need for a list since only one statement or also could be empty block
-    if (stmt_list_hd->child1 == NULL){
-        return stmt_list_hd->child0;
-    }
+    //no need for a list since only one statement
     return stmt_list_hd;
 }
 
@@ -393,7 +441,7 @@ void formals(int* argCount) {
 
         //if it doesn't exists and the declaration is in the global scope
         if (!found){
-            addVariableToScope(&symbolTable, currentID, "int variable", "", NULL);
+            addVariableToScope(&symbolTable, currentID, "int variable", "arg", NULL);
 
             //increment the amount of parameters in a function definition
             (*argCount)++;
@@ -450,12 +498,10 @@ ASTnode* func_defn(){
     match(RPAREN);
     match(LBRACE);
 
-    //might need to allocate new memory for variable list
     opt_var_decls();
     ast->st_ref = symbolTable->variableList;
 
-    ASTnode* stmt_list_head = opt_stmt_list();
-    ast->child0 = stmt_list_head;
+    ast->child0 = opt_stmt_list();
 
     match(RBRACE);
 
@@ -524,7 +570,7 @@ void prog(){
         match(ID);
 
         if (curr_tok == LPAREN) {
-            ASTnode* popo = func_defn();
+            func_defn();
             //printSymbolTable(symbolTable);
         } else {
 
