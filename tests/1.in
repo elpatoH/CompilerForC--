@@ -1,17 +1,33 @@
-int x, y;
-int f(int x, int y, int z) {
+/* if and if-else stmts with {} stmts */
+
+int f() {
+  int x;
+  {
+    if (x > 0) {
+    }
+  }
 }
 
 int g() {
-  int x, y;
-  if (x == y) {
-    g();
-    x = 12;
-    f(y, x, 93);
+  int x;
+  {
+    if (x > 0) {
+    }
+    else {
+    }
   }
-  else
-    while (x > y)
-      ;
-  return 5;
 }
 
+int h() {
+  int x;
+  {
+    if (x > 0) {
+      {
+      }
+    }
+    else {
+      {
+      }
+    }
+  }
+}

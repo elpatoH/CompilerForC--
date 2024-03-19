@@ -1,4 +1,7 @@
 #include "ast.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 NodeType ast_node_type(void* ptr) {
@@ -25,7 +28,7 @@ returns the number of formal parameters for the function;
 int func_def_nargs(void* ptr) {
     ASTnode* node = (ASTnode*) ptr;
     if (node->ntype != FUNC_DEF) {printf("not func def.\n"); exit(1);};
-    return *node->num;
+    return *(node->num);
 }
 
 /*
@@ -50,18 +53,22 @@ char* func_def_argname(void* ptr, int n){
 
     //create list of parameters
     InfoNode* cur = node->st_ref;
-    char* args[funcDefNArgs];
+    //char* args[funcDefNArgs];
+    char** args = malloc(funcDefNArgs * sizeof(char*));
+
     int argIndex = 0;
-    while(cur != NULL){
+    while(cur != NULL && argIndex < funcDefNArgs){
         if (strcmp(cur->info, "arg") == 0){
             args[argIndex] = cur->name;
             argIndex++;
         }
         cur = cur->next;
     }
-    //printf("here: %s\n", args[0]);
+    // Duplicate the string to ensure it's safe to return
+    char* result = strdup(args[funcDefNArgs - n]);
+    free(args);
 
-    return args[funcDefNArgs - n];
+    return result;
 }
 
 /*

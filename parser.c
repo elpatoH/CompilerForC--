@@ -472,6 +472,8 @@ ASTnode* func_defn(){
     ast->ntype = FUNC_DEF;
     ast->nameF = currentID;
     int* argCount = malloc(sizeof(int));
+    //no args
+    *argCount = 0;
     
     if (chk_decl_flag){
         ScopeNode* globalScope = getLastScope(symbolTable);
