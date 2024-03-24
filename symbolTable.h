@@ -35,7 +35,9 @@ InfoNode* findFunctionInScopeAndGetArgCount(ScopeNode* head, const char* name);
 bool findFunctionOrVariableInAllScopesByNameAndType(ScopeNode* head, const char* name, const char* type);
 InfoNode* findVariableInScopeAndGetArgCount(ScopeNode* head, const char* name);
 bool findVariableInScopeByName(ScopeNode* head, const char* name);
-bool findFunctionInAllScopes(ScopeNode* head, const char* name, int* argCount);
+//bool findFunctionInAllScopes(ScopeNode* head, const char* name, int* argCount);
 ScopeNode* getLastScope(ScopeNode* head);
+InfoNode* createVariableNode(const char* name, const char* type, const char* info, int* argCount);
+void addVariablePointerToScope(ScopeNode** head, InfoNode* newNode);
 
 #endif

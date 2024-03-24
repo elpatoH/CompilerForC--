@@ -39,8 +39,20 @@ typedef enum {
   DIV,              /* / */
   UMINUS,           /* - (unary) */
   AND,              /* && */
-  OR                /* || */
+  OR,                /* || */
+  LABEL,
+  PARAM,
+  CALL,
+  LEAVE,
 } NodeType;
+
+typedef struct Quad {
+    NodeType op;
+    void* src1;  // Can be either InfoNode* or Quad* depending on op
+    void* src2;  // Can be either InfoNode* or Quad* depending on op
+    void* dest;  // Can be either InfoNode* or Quad* depending on op
+    struct Quad* next;
+} Quad;
 
 typedef struct ASTnode {
     NodeType ntype; /* what type of node */
@@ -48,6 +60,8 @@ typedef struct ASTnode {
     InfoNode *st_ref; /* variables, function calls */
     int* num; /* integer constants */
     struct ASTnode *child0, *child1, *child2;
+    struct Quad* code; /* list of intermediate code instructions for this node */
+    InfoNode* place; /* The location where the expression's value is stored at runtime, referring directly to a symbol table entry */
 } ASTnode;
 
 /*******************************************************************************

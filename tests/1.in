@@ -1,33 +1,26 @@
-/* if and if-else stmts with {} stmts */
+/* a single call to println() */
 
-int f() {
-  int x;
-  {
-    if (x > 0) {
-    }
-  }
-}
+int main() {
+    println(34567);
+    println(123);
+    println(111);
+    println(7273);
 
-int g() {
-  int x;
-  {
-    if (x > 0) {
-    }
-    else {
-    }
-  }
-}
+    println(7273);
 
-int h() {
-  int x;
-  {
-    if (x > 0) {
-      {
-      }
-    }
-    else {
-      {
-      }
-    }
-  }
+    println(7273);
+
+    println(7273);
+
+    println(7273);
+
+    println(7273);
+
+    println(7273);
+
+    println(7273);
+
+    println(7273);
+
+    println(7273);
 }

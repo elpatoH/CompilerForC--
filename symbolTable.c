@@ -40,6 +40,17 @@ void addVariableToScope(ScopeNode** head, const char* name, const char* type, co
     firstScope->variableList = newNode;
 }
 
+void addVariablePointerToScope(ScopeNode** head, InfoNode* newNode) {
+    if (head == NULL || *head == NULL) {
+        return;
+    }
+
+    ScopeNode* firstScope = *head;
+
+    newNode->next = firstScope->variableList;
+    firstScope->variableList = newNode;
+}
+
 bool findFunctionOrVariableInAllScopesByNameAndType(ScopeNode* head, const char* name, const char* type) {
     ScopeNode* currentScope = head;
     while (currentScope != NULL) {

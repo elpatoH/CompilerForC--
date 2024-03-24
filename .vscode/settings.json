@@ -4,6 +4,8 @@
         "stdlib.h": "c",
         "stdio.h": "c",
         "ast.h": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "postorder.h": "c",
+        "symboltable.h": "c"
     }
 }

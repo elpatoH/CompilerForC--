@@ -11,17 +11,20 @@ REFORMAT comment is for changing function names to something more fitting
 #include <stdbool.h>
 #include "scanner.h"
 #include "symbolTable.h"
+#include "postOrder.h"
 #include "ast.h"
 
 extern int get_token();
 extern int line_num;
 extern char* lexeme;
 extern int chk_decl_flag;
+extern int gen_code_flag;
 Token curr_tok;
 
 int currentScope = 0;
 ScopeNode* symbolTable = NULL;
 char* currentID;
+int tmpCount = 0;
 
 extern int print_ast_flag;
 
@@ -140,7 +143,7 @@ ASTnode* fn_call(){
 
         //if it doesn't exists and the declaration is in the global scope
         if (!found){
-            error("function redeclaration or not declared in global scope");
+            error("not declared in global scope");
         }
         else if (foundLocal){
             error("variable ID declared as something else earlier");
@@ -192,15 +195,15 @@ ASTnode* arith_exp() {
         else{
             match(ID);
             return ast_node;
-        } 
-        //might need to delete this
-        //match(ID);
+        }
     }
     else if(curr_tok == INTCON) {
         //ast-print
         ast_node->ntype = INTCONST;
         ast_node->num = malloc(sizeof(int));
         *(ast_node->num) = atoi(lexeme);
+
+        //add intcon into symbol table with tmpCount at end of name
 
         match(INTCON);
     }
@@ -350,10 +353,10 @@ ASTnode* while_stmt(){
 
 ASTnode* stmt() {
     ASTnode* stmt_ast = NULL;
-    if (curr_tok == kwIF) {
+    if (curr_tok == kwIF) { //
         stmt_ast = if_stmt();
     } 
-    else if (curr_tok == kwWHILE) {
+    else if (curr_tok == kwWHILE) { //
         stmt_ast = while_stmt();
     } 
     else if (curr_tok == ID) {
@@ -371,7 +374,7 @@ ASTnode* stmt() {
             error("unkown call");
         }
     }
-    else if (curr_tok == kwRETURN) {
+    else if (curr_tok == kwRETURN) { //
         stmt_ast = return_stmt();
     }
     else if (curr_tok == LBRACE) {
@@ -484,7 +487,7 @@ ASTnode* func_defn(){
             addVariableToScope(&symbolTable, currentID, "function", "", argCount);
         }
         else{
-            error("function redeclaration or not declared in global scope");
+            error("function redeclaration");
         }
     }
     
@@ -510,6 +513,10 @@ ASTnode* func_defn(){
     //printSymbolTable(symbolTable);
     if (print_ast_flag){
         print_ast(ast);
+    }
+    if (gen_code_flag){
+        postOrderTraversal(ast);
+        generateCode(ast);
     }
 
     currentScope--;
@@ -619,11 +626,20 @@ void match(Token expected) {
 
 int parse(){
     curr_tok = get_token();
+    int* argCountForPrintF = malloc(sizeof(int));
 
     if (chk_decl_flag){
         //global scope
         addScope(&symbolTable);
         currentScope++;
+        
+        if (gen_code_flag){
+            *argCountForPrintF = 1;
+            addVariableToScope(&symbolTable, "println", "function", "", argCountForPrintF);
+            char* printlnF = ".data\n_nl: .asciiz \"\\n\"\n.text\n.globl println\nprintln:\nli   $v0, 1\nsyscall\nla   $a0, _nl\nli   $v0, 4\nsyscall\njr   $ra\n\n";
+            fprintf(stdout, "%s", printlnF);
+            fflush(stdout);
+        }
     }
     
     //start
@@ -633,3 +649,80 @@ int parse(){
     match(EOF);
     return 0;
 }
+
+/*
+code generation notes.
+
+- all info in code generation 1 until slide 72
+
+– each instruction will be in this struct:
+    typedef struct {
+        enum OpType op; // PLUS, MINUS, etc.
+        Operand src1; // source operand 1
+        Operand src2; // source operand 2
+        ...
+    } Quad;
+
+At each syntax tree node:
+⚫ recursively process the children
+⚫ then generate code for this node
+⚫ then glue it all together
+
+- function for generating code for stmt:
+    codeGen_stmt(ASTnode *s)
+    {
+        switch (s->nodetype) {
+        case FOR: ... ; break;
+        case WHILE : ... ; break;
+        case IF: ... ; break;
+        case ‘=‘ : ... ; break;
+        ...
+    }
+
+- function for generating code for expression:
+    codeGen_expr(ASTnode *e)
+    {
+        switch (e->nodetype) {
+        case ‘+’: ... ; break;
+        case ‘*’ : ... ; break;
+        case ‘–’: ... ; break;
+        case ‘/’ : ... ; break;
+        ...
+    }
+
+Auxiliary routines
+• struct symtab_entry *newtemp(typename t) slide 29
+    − create a symbol table entry for a new temporary
+    − return a pointer to this ST entry.
+• struct instr *newlabel() slide 31
+    − return a new label instruction
+• struct instr *newinstr(op, arg1, arg2, ...) slide 30
+    − create a new instruction, fill in the arguments
+        supplied
+    − return a pointer to the result
+
+struct symtab_entry *newtemp( t )
+{
+    struct symtab_entry *ntmp = malloc( ... );
+    ntmp->name = ...create a new name that doesn’t conflict...
+    ntmp->type = t;
+    ...insert ntmp into the function's local symbol table...
+    return ntmp;
+}
+
+struct instr *newinstr(opType, src1, src2, dest)
+{
+    struct instr *ninstr = malloc( ... );
+    ninstr->op = opType;
+    ninstr->src1 = src1; ninstr->src2 = src2; ninstr->dest = dest;
+    return ninstr;
+}
+
+static int label_num = 0;
+struct instr *newlabel()
+{
+    return newinstr(LABEL, label_num++);
+}
+
+
+*/

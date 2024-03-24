@@ -1,0 +1,64 @@
+.data
+_nl: .asciiz "\n"
+.text
+.globl println
+println:
+li   $v0, 1
+syscall
+la   $a0, _nl
+li   $v0, 4
+syscall
+jr   $ra
+
+.globl main
+main:
+    addiu $sp, $sp, -24
+    sw $fp, 0($sp)
+    sw    $ra, 4($sp)
+    addiu $fp, $sp, 20
+
+    li $t0, 34567
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 123
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 111
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+    li $t0, 7273
+    add $a0, $zero, $t0
+    jal println
+
+    lw    $ra, 4($sp)
+    lw    $fp, 0($sp)
+    addiu $sp, $sp, 24
+jr $ra
+
