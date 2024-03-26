@@ -39,5 +39,6 @@ bool findVariableInScopeByName(ScopeNode* head, const char* name);
 ScopeNode* getLastScope(ScopeNode* head);
 InfoNode* createVariableNode(const char* name, const char* type, const char* info, int* argCount);
 void addVariablePointerToScope(ScopeNode** head, InfoNode* newNode);
+int getTemporaryCount(ScopeNode* head);
 
 #endif

@@ -14,9 +14,9 @@ void printVAR(Quad* quad);
 void postOrderTraversal(ASTnode* node) {
     if (node == NULL) return;
 
-    postOrderTraversal(node->child0);
-    postOrderTraversal(node->child1);
-    postOrderTraversal(node->child2);
+    //postOrderTraversal(node->child0);
+    // postOrderTraversal(node->child1);
+    // postOrderTraversal(node->child2);
     
     visit(node);
 }
@@ -38,8 +38,8 @@ void codeGen_expr(ASTnode* e){
             char* name = func_def_name(e);
             ScopeNode* globalScope = getLastScope(symbolTable);
             InfoNode* stREF = findFunctionInScopeAndGetArgCount(globalScope, name);
-            
-            Quad* funcDefInst = newinstr(FUNC_DEF, stREF, NULL, NULL);
+
+            Quad* funcDefInst = newinstr(FUNC_DEF, stREF,e->num, NULL);
             if (body != NULL){
                 funcDefInst->next = body->code;
             }
@@ -242,22 +242,29 @@ void printRETURN(Quad* quad){
 //start epilogue
 void printLEAVE(Quad* quad){
     InfoNode* node = (InfoNode*) quad->src1;
-    //printf("\n    leave: %s\n", node->name);
-    //need the node so that i can see how many vars im gonna need and how much i would need to deallocate
-    printf("\n    lw    $ra, 4($sp)\n");
-    printf("    lw    $fp, 0($sp)\n");
-    printf("    addiu $sp, $sp, 24\n");
+    int* paramsC = node->argCount;
+    int tempC = getTemporaryCount(symbolTable);
+    int frame_size = 4 * ((*paramsC) + tempC) + 8;
+
+    printf("\n    move $sp, $fp\n");
+    printf("    lw $ra, 0($sp)\n");
+    printf("    lw $fp, 4($sp)\n");
+    printf("    addiu $sp, $sp, %d\n", frame_size);
 }
 
 void printFUNDEF(Quad* quad){
     InfoNode* node = (InfoNode*) quad->src1;
+    int* paramsC = node->argCount;
+    int* params = quad->src2;
+    int tempC = getTemporaryCount(symbolTable);
+    int frame_size = 4 * ((*paramsC) + tempC) + 8;
+
     printf(".globl %s\n", node->name);
     printf("%s:\n", node->name);
-    printf("    addiu $sp, $sp, -24\n");
-    printf("    sw $fp, 0($sp)\n");
-    printf("    sw    $ra, 4($sp)\n");
-    printf("    addiu $fp, $sp, 20\n\n");
-
+    printf("    addiu $sp, $sp, -%d    # tmps: %d, params: %d, %d\n", frame_size, tempC, *params, *paramsC);
+    printf("    sw $fp, 4($sp)         # Save the old frame pointer\n");
+    printf("    sw $ra, 0($sp)         # Save the return address\n");
+    printf("    move $fp, $sp          # Set the new frame pointer\n\n");
 }
 
 void printCALL(Quad* quad){

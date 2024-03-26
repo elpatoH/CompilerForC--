@@ -112,6 +112,19 @@ InfoNode* findVariableInScopeAndGetArgCount(ScopeNode* head, const char* name) {
     return NULL;
 }
 
+int getTemporaryCount(ScopeNode* head) {
+    int tempC = 0;
+    if (head == NULL) return NULL;
+    InfoNode* variable = head->variableList;
+    while (variable != NULL) {
+        if (strcmp(variable->info, "temp") == 0) {
+            tempC++;
+        }
+        variable = variable->next;
+    }
+    return tempC;
+}
+
 /*
 create new scopenode
 */
