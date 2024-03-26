@@ -115,7 +115,6 @@ void codeGen_expr(ASTnode* e){
         case EXPR_LIST: {
             //everything commented out here is will eventually handle multiple parameters
             ASTnode* list_hd = (ASTnode*) expr_list_head(e);
-            ASTnode* list_tl = (ASTnode*) expr_list_rest(e);
             
             if (list_hd != NULL){
                 codeGen_expr(list_hd);
@@ -231,7 +230,15 @@ void printQuad(Quad* quad) {
 
 void printVAR(Quad* quad){
     InfoNode* stRef = (InfoNode*) quad->dest;
-    printf("    var: %s\n", stRef->name);
+    int* argNum = stRef->argCount;
+    int argLocation = *argNum * 4 + 8;
+    if (strcmp(stRef->info, "arg") == 0){
+      printf("    lw $t0, %d($fp)\n", argLocation);
+    }
+    else{
+      //if its not an arg it should be in neg stack space
+      printf("idk where u at\n");
+    }
 }
 
 //end epilogue
@@ -270,12 +277,16 @@ void printFUNDEF(Quad* quad){
 void printCALL(Quad* quad){
     InfoNode* stRef = (InfoNode*) quad->src1;
     printf("    jal %s\n", stRef->name);
+    int* paramC = stRef->argCount;
+    int restoreSpace = *paramC*4;
+    printf("    la $sp, %d($sp)\n\n", restoreSpace);
 }
 
 void printPARAM(Quad* quad){
     InfoNode* node = (InfoNode*) quad->src1;
     //get place in stack from symboltable index or something like that
-    printf("    add $a0, $zero, $t0\n");
+    printf("    la $sp, -4($sp)\n");
+    printf("    sw $t0, 0($sp)\n\n");
 }
 
 void printASSG(Quad* quad){

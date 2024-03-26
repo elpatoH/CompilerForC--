@@ -114,7 +114,7 @@ InfoNode* findVariableInScopeAndGetArgCount(ScopeNode* head, const char* name) {
 
 int getTemporaryCount(ScopeNode* head) {
     int tempC = 0;
-    if (head == NULL) return NULL;
+    if (head == NULL) return -1;
     InfoNode* variable = head->variableList;
     while (variable != NULL) {
         if (strcmp(variable->info, "temp") == 0) {
