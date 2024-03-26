@@ -84,6 +84,7 @@ void codeGen_expr(ASTnode* e){
             //if statement to check if return type of func_call is void
             //if void then no need to set e.place
 
+            //reverse list so params are in right order
             Quad* reversedCodeList = NULL;
             Quad* current = arglist->code;
             while (current != NULL) {
@@ -122,7 +123,6 @@ void codeGen_expr(ASTnode* e){
             break;
         }
         case EXPR_LIST: {
-            //everything commented out here is will eventually handle multiple parameters
             ASTnode* list_hd = (ASTnode*) expr_list_head(e);
             
             if (list_hd != NULL){
@@ -246,7 +246,7 @@ void printVAR(Quad* quad){
     }
     else{
       //if its not an arg it should be in neg stack space
-      printf("idk where u at\n");
+      printf("idk where you at\n");
     }
 }
 
@@ -273,7 +273,9 @@ void printFUNDEF(Quad* quad){
     int* paramsC = node->argCount;
     int* params = quad->src2;
     int tempC = getTemporaryCount(symbolTable);
-    int frame_size = 4 * ((*paramsC) + tempC) + 8;
+    //no need to account for params
+    //int frame_size = 4 * ((*paramsC) + tempC) + 8;
+    int frame_size = 4 * (tempC) + 8;
 
     printf(".globl %s\n", node->name);
     printf("%s:\n", node->name);
@@ -288,13 +290,13 @@ void printCALL(Quad* quad){
     printf("    jal %s\n", stRef->name);
     int* paramC = stRef->argCount;
     int restoreSpace = *paramC*4;
-    printf("    la $sp, %d($sp)\n\n", restoreSpace);
+    printf("    addiu $sp, $sp %d\n\n", restoreSpace);
 }
 
 void printPARAM(Quad* quad){
     InfoNode* node = (InfoNode*) quad->src1;
     //get place in stack from symboltable index or something like that
-    printf("    la $sp, -4($sp)\n");
+    printf("    addiu $sp, $sp, -4\n");
     printf("    sw $t0, 0($sp)\n\n");
 }
 
