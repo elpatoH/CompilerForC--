@@ -1,26 +1,10 @@
 /* a single call to println() */
 
+int perro(int x, int y){
+    println(x);
+}
+
 int main() {
-    println(34567);
-    println(123);
-    println(111);
-    println(7273);
-
-    println(7273);
-
-    println(7273);
-
-    println(7273);
-
-    println(7273);
-
-    println(7273);
-
-    println(7273);
-
-    println(7273);
-
-    println(7273);
-
-    println(7273);
+    println(1234);
+    perro(1, 2);
 }

@@ -9,6 +9,7 @@ void printCALL(Quad* quad);
 void printFUNDEF(Quad* quad);
 void printLEAVE(Quad* quad);
 void printRETURN(Quad* quad);
+void printVAR(Quad* quad);
 
 void postOrderTraversal(ASTnode* node) {
     if (node == NULL) return;
@@ -24,33 +25,29 @@ void visit(ASTnode* node) {
     codeGen_expr(node);
 }
 
-Quad* concatQuads(Quad* list1, Quad* list2) {
-    if (list1 == NULL)
-        return list2;
-    Quad* tmp = list1;
-    while (tmp->next != NULL) {
-        tmp = tmp->next;
-    }
-    tmp->next = list2;
-    return list1;
-}
-
 void codeGen_expr(ASTnode* e){
     switch (e->ntype) {
         case FUNC_DEF: {
             //char* name = func_def_name(e);
             //get args and do something with them
             ASTnode* body = func_def_body(e);
-            codeGen_expr(body);
+            if (body != NULL){
+                codeGen_expr(body);
+            }
 
             char* name = func_def_name(e);
             ScopeNode* globalScope = getLastScope(symbolTable);
             InfoNode* stREF = findFunctionInScopeAndGetArgCount(globalScope, name);
             
             Quad* funcDefInst = newinstr(FUNC_DEF, stREF, NULL, NULL);
-            funcDefInst->next = body->code;
-            e->code = funcDefInst;
+            if (body != NULL){
+                funcDefInst->next = body->code;
+            }
+            else{
+                funcDefInst->next = NULL;
+            }
 
+            e->code = funcDefInst;
             //setting leave and return 3addr
             Quad* temp = e->code;
             while(temp->next != NULL){
@@ -67,10 +64,12 @@ void codeGen_expr(ASTnode* e){
             codeGen_expr(list_hd);
             e->code = list_hd->code;
 
+            //point to last
             Quad* lastPointer = e->code;
             while (lastPointer->next != NULL){
                 lastPointer = lastPointer->next;
             }
+
             ASTnode* list_rest = (ASTnode*) stmt_list_rest(e);
             if (list_rest != NULL){
                 codeGen_expr(list_rest);
@@ -80,37 +79,60 @@ void codeGen_expr(ASTnode* e){
         }
         case FUNC_CALL: {
             ASTnode* arglist = (ASTnode*) func_call_args(e);
-            //recurse into argument list expression
             codeGen_expr(arglist); 
+
             //if statement to check if return type of func_call is void
             //if void then no need to set e.place
-            e->code = arglist->code;
-            //loop to iterate through num of args
-            e->code->next = newinstr(PARAM, e->code->dest, NULL, NULL);
 
-            //iterate through symbol table to get name of callee
+            e->code = arglist->code;
+
+            //need loop to iterate through num of args
             ScopeNode* globalScope = getLastScope(symbolTable);
             InfoNode* stREF = findFunctionInScopeAndGetArgCount(globalScope, e->nameF);
-            e->code->next->next = newinstr(CALL, stREF, NULL, NULL);
+
+            Quad* list = e->code;
+            int index = 0;
+            while (index < *stREF->argCount){
+                Quad* newParam = newinstr(PARAM, list->dest, NULL, NULL);
+                newParam->next = list->next;
+                list->next = newParam;
+
+
+                list = list->next->next;
+                index++;
+            }
+
+            //last instruction is CALL
+            Quad* temp = e->code;
+            while(temp->next != NULL){
+                temp = temp->next;
+            }
+            temp->next = newinstr(CALL, stREF, NULL, NULL);
+
             //retrieve function
             break;
         }
         case EXPR_LIST: {
-            //printf("im in exprlist codegenexpr\n child0 contains head and child1 contains the rest\n");
-            fflush(stdout);
             //everything commented out here is will eventually handle multiple parameters
-            ASTnode* list_hd;
-            //ASTnode* list_tl;
-            list_hd = (ASTnode*) expr_list_head(e);
-            //list_tl = (ASTnode*) expr_list_rest(e);
+            ASTnode* list_hd = (ASTnode*) expr_list_head(e);
+            ASTnode* list_tl = (ASTnode*) expr_list_rest(e);
+            
             if (list_hd != NULL){
                 codeGen_expr(list_hd);
                 e->code = list_hd->code;
                 e->place = list_hd->place;
-                // if (list_tl != NULL){
-                //     codeGen_expr(list_tl);
-                //     e->code->next = list_tl->code;
-                // }
+
+                // Point to the last element in the generated code list
+                Quad* lastPointer = e->code;
+                while (lastPointer->next != NULL) {
+                    lastPointer = lastPointer->next;
+                }
+
+                ASTnode* list_rest = (ASTnode*) expr_list_rest(e);
+                if (list_rest != NULL){
+                    codeGen_expr(list_rest);
+                    lastPointer->next = list_rest->code;
+                }
             }
             break;
         }
@@ -118,6 +140,12 @@ void codeGen_expr(ASTnode* e){
             e->place = newtemp("INTCON");
             int* num = e->num;
             e->code = newinstr(ASSG, num, NULL, e->place);
+            break;
+        }
+        case IDENTIFIER: {
+            InfoNode* stREF = findVariableInScopeAndGetArgCount(symbolTable, e->nameF);
+            e->code = newinstr(VAR, NULL, NULL, stREF);
+            printf("");
             break;
         }
         default:{
@@ -186,6 +214,10 @@ void printQuad(Quad* quad) {
             printRETURN(quad);
             break;
         }
+        case VAR: {
+            printVAR(quad);
+            break;
+        }
         default: {
             printf("not yet implemented: %s\n", operationName(quad->op));
             exit(0);
@@ -195,6 +227,11 @@ void printQuad(Quad* quad) {
     if (quad->next) {
         printQuad(quad->next);
     }
+}
+
+void printVAR(Quad* quad){
+    InfoNode* stRef = (InfoNode*) quad->dest;
+    printf("    var: %s\n", stRef->name);
 }
 
 //end epilogue
@@ -285,11 +322,15 @@ char* operationName(NodeType ntype) {
     return "assignment";
   case FUNC_CALL:
     return "func_call";
+  case IDENTIFIER:
+    return "identifier";
+  case VAR:
+    return "var";
 
 
     
   default:
-      fprintf(stderr, "*** [%s] Unrecognized syntax tree node type %d\n", __func__, ntype);
+      fprintf(stderr, "Unrecognized syntax tree node type %d\n", ntype);
       return NULL;
   }
 }

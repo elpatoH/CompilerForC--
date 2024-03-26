@@ -10,6 +10,22 @@ li   $v0, 4
 syscall
 jr   $ra
 
+.globl perro
+perro:
+    addiu $sp, $sp, -24
+    sw $fp, 0($sp)
+    sw    $ra, 4($sp)
+    addiu $fp, $sp, 20
+
+    var: x
+    add $a0, $zero, $t0
+    jal println
+
+    lw    $ra, 4($sp)
+    lw    $fp, 0($sp)
+    addiu $sp, $sp, 24
+jr $ra
+
 .globl main
 main:
     addiu $sp, $sp, -24
@@ -17,45 +33,14 @@ main:
     sw    $ra, 4($sp)
     addiu $fp, $sp, 20
 
-    li $t0, 34567
+    li $t0, 1234
     add $a0, $zero, $t0
     jal println
-    li $t0, 123
+    li $t0, 1
     add $a0, $zero, $t0
-    jal println
-    li $t0, 111
+    li $t0, 2
     add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
-    li $t0, 7273
-    add $a0, $zero, $t0
-    jal println
+    jal perro
 
     lw    $ra, 4($sp)
     lw    $fp, 0($sp)
