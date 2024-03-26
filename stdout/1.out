@@ -21,15 +21,22 @@ jr   $ra
 
 .globl perro
 perro:
-    addiu $sp, $sp, -20    # tmps: 0, params: 3, 3
+    addiu $sp, $sp, -16    # tmps: 0, params: 2, 2
     sw $fp, 4($sp)         # Save the old frame pointer
     sw $ra, 0($sp)         # Save the return address
     move $fp, $sp          # Set the new frame pointer
 
+    lw $t0, 8($fp)
     la $sp, -4($sp)
     sw $t0, 0($sp)
 
-    lw $t0, 8($fp)
+    jal println
+    la $sp, 4($sp)
+
+    lw $t0, 12($fp)
+    la $sp, -4($sp)
+    sw $t0, 0($sp)
+
     jal println
     la $sp, 4($sp)
 
@@ -37,42 +44,38 @@ perro:
     move $sp, $fp
     lw $ra, 0($sp)
     lw $fp, 4($sp)
-    addiu $sp, $sp, 20
+    addiu $sp, $sp, 16
 jr $ra
 
 .globl main
 main:
-    addiu $sp, $sp, -24    # tmps: 4, params: 0, 0
+    addiu $sp, $sp, -20    # tmps: 3, params: 0, 0
     sw $fp, 4($sp)         # Save the old frame pointer
     sw $ra, 0($sp)         # Save the return address
     move $fp, $sp          # Set the new frame pointer
 
+    li $t0, 1234
     la $sp, -4($sp)
     sw $t0, 0($sp)
 
-    li $t0, 1234
     jal println
     la $sp, 4($sp)
-
-    la $sp, -4($sp)
-    sw $t0, 0($sp)
-
-    li $t0, 3
-    la $sp, -4($sp)
-    sw $t0, 0($sp)
 
     li $t0, 2
     la $sp, -4($sp)
     sw $t0, 0($sp)
 
     li $t0, 1
+    la $sp, -4($sp)
+    sw $t0, 0($sp)
+
     jal perro
-    la $sp, 12($sp)
+    la $sp, 8($sp)
 
 
     move $sp, $fp
     lw $ra, 0($sp)
     lw $fp, 4($sp)
-    addiu $sp, $sp, 24
+    addiu $sp, $sp, 20
 jr $ra
 

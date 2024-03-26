@@ -1,10 +1,11 @@
 /* a single call to println() */
 
-int perro(int x, int y, int z){
+int perro(int x, int y){
     println(x);
+    println(y);
 }
 
 int main() {
     println(1234);
-    perro(1, 2, 3);
+    perro(1,2);
 }

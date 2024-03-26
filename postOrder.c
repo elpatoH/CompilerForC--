@@ -84,7 +84,16 @@ void codeGen_expr(ASTnode* e){
             //if statement to check if return type of func_call is void
             //if void then no need to set e.place
 
-            e->code = arglist->code;
+            Quad* reversedCodeList = NULL;
+            Quad* current = arglist->code;
+            while (current != NULL) {
+                Quad* next = current->next;
+                current->next = reversedCodeList;
+                reversedCodeList = current;
+                current = next;
+            }
+
+            e->code = reversedCodeList;
 
             //need loop to iterate through num of args
             ScopeNode* globalScope = getLastScope(symbolTable);
