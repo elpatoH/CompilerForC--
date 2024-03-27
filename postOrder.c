@@ -14,9 +14,11 @@ void printVAR(Quad* quad);
 void postOrderTraversal(ASTnode* node) {
     if (node == NULL) return;
 
-    //postOrderTraversal(node->child0);
+    // postOrderTraversal(node->child0);
     // postOrderTraversal(node->child1);
     // postOrderTraversal(node->child2);
+
+    name_num = 0;
     
     visit(node);
 }
@@ -26,6 +28,10 @@ void visit(ASTnode* node) {
 }
 
 void codeGen_expr(ASTnode* e){
+    // if (e->nameF != NULL){
+    //   char* popo = operationName(e->ntype);
+    //   printf("HERERERER %s : %s\n\n\n", popo, e->nameF);
+    // }
     switch (e->ntype) {
         case FUNC_DEF: {
             //char* name = func_def_name(e);
@@ -76,6 +82,31 @@ void codeGen_expr(ASTnode* e){
                 lastPointer->next = list_rest->code;
             }
             break;
+        }
+        case ASSG: {
+
+          char* LHSName = stmt_assg_lhs(e);
+          InfoNode* verga = findVariableInScopeAndGetArgCount(symbolTable, LHSName);
+          
+          ASTnode* node = stmt_assg_rhs(e);
+          codeGen_expr(node);
+          e->code = node->code;
+
+          int* loc = malloc(sizeof(int));
+          *loc = name_num;
+          verga->location = loc;
+
+          name_num++;
+
+          int* noOpMine = malloc(sizeof(int));
+          *noOpMine = 1;
+
+          Quad* perro = newinstr(ASSG, node->code->dest, noOpMine, verga);
+          e->code->next = perro;
+
+          //save location where it is being saved
+          // and add new inst for assignemnt to
+          break;
         }
         case FUNC_CALL: {
             ASTnode* arglist = (ASTnode*) func_call_args(e);
@@ -152,8 +183,8 @@ void codeGen_expr(ASTnode* e){
         }
         case IDENTIFIER: {
             InfoNode* stREF = findVariableInScopeAndGetArgCount(symbolTable, e->nameF);
+
             e->code = newinstr(VAR, NULL, NULL, stREF);
-            printf("");
             break;
         }
         default:{
@@ -239,14 +270,18 @@ void printQuad(Quad* quad) {
 
 void printVAR(Quad* quad){
     InfoNode* stRef = (InfoNode*) quad->dest;
-    int* argNum = stRef->argCount;
-    int argLocation = *argNum * 4 + 8;
     if (strcmp(stRef->info, "arg") == 0){
-      printf("    lw $t0, %d($fp)\n", argLocation);
+      int* argNum = stRef->argCount;
+      int argLocation = *argNum * 4 + 8;
+      printf("    lw $t0, %d($fp) #useless?\n", argLocation);
     }
-    else{
-      //if its not an arg it should be in neg stack space
-      printf("idk where you at\n");
+    else if (strcmp(stRef->type, "int variable") == 0){
+      //printf("wtf: %s\n", stRef->name);
+      // int* argNum = stRef->location;
+      // int argLocation = *argNum * 4 + 4;
+      // //if its not an arg it should be in neg stack space
+      // printf("    lw $t0, -%d($fp)\n", argLocation -4);
+      // printf("    sw $t1, -%d($fp)\n\n", argLocation);
     }
 }
 
@@ -270,19 +305,20 @@ void printLEAVE(Quad* quad){
 
 void printFUNDEF(Quad* quad){
     InfoNode* node = (InfoNode*) quad->src1;
-    int* paramsC = node->argCount;
-    int* params = quad->src2;
     int tempC = getTemporaryCount(symbolTable);
-    //no need to account for params
-    //int frame_size = 4 * ((*paramsC) + tempC) + 8;
-    int frame_size = 4 * (tempC) + 8;
+    int localC = getLocalCount(symbolTable);
+    int frame_size = 4 * (tempC + localC);
 
     printf(".globl %s\n", node->name);
     printf("%s:\n", node->name);
-    printf("    addiu $sp, $sp, -%d    # tmps: %d, params: %d, %d\n", frame_size, tempC, *params, *paramsC);
+    printf("    addiu $sp, $sp, -8     # 2 slots for fp and ra\n");
     printf("    sw $fp, 4($sp)         # Save the old frame pointer\n");
     printf("    sw $ra, 0($sp)         # Save the return address\n");
-    printf("    move $fp, $sp          # Set the new frame pointer\n\n");
+    printf("    move $fp, $sp          # Set the new frame pointer\n");
+    if (frame_size != 0){
+      printf("    addiu $sp, $sp, -%d    # tmps: %d, locals: %d\n", frame_size, tempC, localC);
+    }
+    printf("\n");
 }
 
 void printCALL(Quad* quad){
@@ -295,15 +331,62 @@ void printCALL(Quad* quad){
 
 void printPARAM(Quad* quad){
     InfoNode* node = (InfoNode*) quad->src1;
+    if (strcmp(node->info, "temp") == 0){
+      char* name = node->name;
+      char* substring = &name[5];
+      int number = atoi(substring);
+      int location = (number * 4) + 4;
+      printf("    lw $t0, -%d($fp)\n", location);
+    }
+    //its an int variable and its not and argument
+    else if (strcmp(node->type, "int variable") == 0 && strcmp(node->info, "arg") != 0){
+      InfoNode* stREF = findVariableInScopeAndGetArgCount(symbolTable, node->name);
+      int varLocation = ((*stREF->location) * 4) + 4;
+      printf("    lw $t0, -%d($fp)\n", varLocation);
+    }
     //get place in stack from symboltable index or something like that
     printf("    addiu $sp, $sp, -4\n");
     printf("    sw $t0, 0($sp)\n\n");
 }
 
 void printASSG(Quad* quad){
-    InfoNode* node = (InfoNode*) quad->dest;
-    int* src1 = (int*) quad->src1;
-    printf("    li $t0, %d\n", *src1);
+    int* myNoOp = (int*) quad->src2;
+    if (myNoOp != NULL){
+        InfoNode* node = (InfoNode*) quad->src1;
+        char* name = node->name;
+        char* substring = &name[5];
+        int number = atoi(substring);
+        int location;
+        if (strcmp(node->info, "arg") == 0){
+          int* argNum = node->argCount;
+          location =  *argNum * 4 + 8;
+        }
+        else{
+          location = (number * 4) + 4;
+        }
+
+        InfoNode* stREF = (InfoNode*) quad->dest;
+        int LHSLocation = ((*stREF->location) * 4) + 4;
+
+        if (strcmp(node->info, "arg") == 0){
+          printf("    lw $t1, %d($fp)\n", location);
+        }
+        else{
+          printf("    lw $t1, -%d($fp)\n", location);
+        }
+        printf("    sw $t1, -%d($fp)  # : %s :\n\n", LHSLocation, stREF->name);
+    }
+    else{
+        InfoNode* node = (InfoNode*) quad->dest;
+        char* name = node->name;
+        char* substring = &name[5];
+        int number = atoi(substring);
+        int location = (number * 4) + 4;
+
+        int* src1 = (int*) quad->src1;
+        printf("    li $t0, %d\n", *src1);
+        printf("    sw $t0, -%d($fp)\n\n", location);
+    }
 }
 
 char* operationName(NodeType ntype) {

@@ -9,7 +9,6 @@ extern ScopeNode* symbolTable;
 
 void generateCode(ASTnode* tree);
 void postOrderTraversal(ASTnode* node);
-void codeGen_stmt(ASTnode* s);
 void codeGen_expr(ASTnode* e);
 //write following functions and keep on writing the codeGen_stmt,
 //  I believe codeGen_expr will not be implemented until next milestone

@@ -21,6 +21,7 @@ InfoNode* createVariableNode(const char* name, const char* type, const char* inf
     strncpy(newNode->type, type, sizeof(newNode->type) - 1);
     strncpy(newNode->info, info, sizeof(newNode->info) - 1);
     newNode->argCount = argCount;
+    newNode->location = NULL;
     newNode->next = NULL;
     return newNode;
 }
@@ -118,6 +119,19 @@ int getTemporaryCount(ScopeNode* head) {
     InfoNode* variable = head->variableList;
     while (variable != NULL) {
         if (strcmp(variable->info, "temp") == 0) {
+            tempC++;
+        }
+        variable = variable->next;
+    }
+    return tempC;
+}
+
+int getLocalCount(ScopeNode* head) {
+    int tempC = 0;
+    if (head == NULL) return -1;
+    InfoNode* variable = head->variableList;
+    while (variable != NULL) {
+        if (strcmp(variable->type, "int variable") == 0) {
             tempC++;
         }
         variable = variable->next;

@@ -14,6 +14,8 @@ typedef struct InfoNode {
 
     //for function
     int* argCount; 
+    int* location;
+    int* location2;
 
     //next variable in scope
     struct InfoNode* next;
@@ -40,5 +42,6 @@ ScopeNode* getLastScope(ScopeNode* head);
 InfoNode* createVariableNode(const char* name, const char* type, const char* info, int* argCount);
 void addVariablePointerToScope(ScopeNode** head, InfoNode* newNode);
 int getTemporaryCount(ScopeNode* head);
+int getLocalCount(ScopeNode* head);
 
 #endif

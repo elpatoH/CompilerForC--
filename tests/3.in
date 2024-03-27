@@ -1,0 +1,15 @@
+int x, y, u, v, w;
+
+int g(int v) {
+    println(v);
+}
+
+int f(int u) {
+    x = u;
+    g(x);
+}
+
+int main() {
+    x = 12345;
+    f(x);
+}
