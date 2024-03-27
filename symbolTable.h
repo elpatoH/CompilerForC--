@@ -33,6 +33,7 @@ void addScope(ScopeNode** head);
 void deleteScope(ScopeNode** head);
 void printSymbolTable(ScopeNode* head);
 bool findVariableInScope(ScopeNode* head, const char* name, const char* type);
+InfoNode* findVariableInAllScopes(ScopeNode* head, const char* name);
 InfoNode* findFunctionInScopeAndGetArgCount(ScopeNode* head, const char* name);
 bool findFunctionOrVariableInAllScopesByNameAndType(ScopeNode* head, const char* name, const char* type);
 InfoNode* findVariableInScopeAndGetArgCount(ScopeNode* head, const char* name);

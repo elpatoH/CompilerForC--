@@ -205,6 +205,21 @@ void printSymbolTable(ScopeNode* head) {
     }
 }
 
+InfoNode* findVariableInAllScopes(ScopeNode* head, const char* name) {
+    ScopeNode* currentScope = head;
+    while (currentScope != NULL) {
+        InfoNode* variable = currentScope->variableList;
+        while (variable != NULL) {
+            if (compareVariablesByName(variable, name) && strcmp(variable->type, "int variable") == 0) {
+                return variable;
+            }
+            variable = variable->next;
+        }
+        currentScope = currentScope->next;
+    }
+    return NULL;
+}
+
 /*
 helper function for comparing variables
 */

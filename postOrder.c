@@ -11,6 +11,28 @@ void printLEAVE(Quad* quad);
 void printRETURN(Quad* quad);
 void printVAR(Quad* quad);
 
+void generateGlobalVariables(){
+  ScopeNode* globalSymbolTable = getLastScope(symbolTable);
+  if (globalSymbolTable == NULL) return;
+
+  bool first = true;
+  //iterate through global table finding all global variables 
+  InfoNode* variable = globalSymbolTable->variableList;
+  while (variable != NULL) {
+      if (strcmp(variable->type, "int variable") == 0 && strcmp(variable->info, "global") == 0) {
+          if (first){
+            first = false;
+            printf(".data\n");
+          }
+          char* name = variable->name;
+          printf("%s : .word 0\n", name);
+      }
+      variable = variable->next;
+  }
+  printf("\n.text\n\n");
+  return;
+}
+
 void postOrderTraversal(ASTnode* node) {
     if (node == NULL) return;
 
@@ -86,7 +108,7 @@ void codeGen_expr(ASTnode* e){
         case ASSG: {
 
           char* LHSName = stmt_assg_lhs(e);
-          InfoNode* verga = findVariableInScopeAndGetArgCount(symbolTable, LHSName);
+          InfoNode* LHSSTRef = findVariableInAllScopes(symbolTable, LHSName);
           
           ASTnode* node = stmt_assg_rhs(e);
           codeGen_expr(node);
@@ -94,14 +116,14 @@ void codeGen_expr(ASTnode* e){
 
           int* loc = malloc(sizeof(int));
           *loc = name_num;
-          verga->location = loc;
+          LHSSTRef->location = loc;
 
           name_num++;
 
           int* noOpMine = malloc(sizeof(int));
           *noOpMine = 1;
 
-          Quad* perro = newinstr(ASSG, node->code->dest, noOpMine, verga);
+          Quad* perro = newinstr(ASSG, node->code->dest, noOpMine, LHSSTRef);
           e->code->next = perro;
 
           //save location where it is being saved
@@ -182,8 +204,9 @@ void codeGen_expr(ASTnode* e){
             break;
         }
         case IDENTIFIER: {
-            InfoNode* stREF = findVariableInScopeAndGetArgCount(symbolTable, e->nameF);
-
+            InfoNode* stREF = findVariableInAllScopes(symbolTable, e->nameF);
+            if (stREF == NULL) printf("wtf\n");
+            fflush(stdout);
             e->code = newinstr(VAR, NULL, NULL, stREF);
             break;
         }
@@ -270,6 +293,7 @@ void printQuad(Quad* quad) {
 
 void printVAR(Quad* quad){
     InfoNode* stRef = (InfoNode*) quad->dest;
+    if (stRef == NULL) return;
     if (strcmp(stRef->info, "arg") == 0){
       int* argNum = stRef->argCount;
       int argLocation = *argNum * 4 + 8;
@@ -331,12 +355,16 @@ void printCALL(Quad* quad){
 
 void printPARAM(Quad* quad){
     InfoNode* node = (InfoNode*) quad->src1;
+    if (node == NULL) return;
     if (strcmp(node->info, "temp") == 0){
       char* name = node->name;
       char* substring = &name[5];
       int number = atoi(substring);
       int location = (number * 4) + 4;
       printf("    lw $t0, -%d($fp)\n", location);
+    }
+    else if (strcmp(node->type, "int variable") == 0 && strcmp(node->info, "global") == 0){
+      printf("    lw $t0, %s\n", node->name);
     }
     //its an int variable and its not and argument
     else if (strcmp(node->type, "int variable") == 0 && strcmp(node->info, "arg") != 0){
@@ -374,7 +402,13 @@ void printASSG(Quad* quad){
         else{
           printf("    lw $t1, -%d($fp)\n", location);
         }
-        printf("    sw $t1, -%d($fp)  # : %s :\n\n", LHSLocation, stREF->name);
+
+        if (strcmp(stREF->info, "global") == 0){
+          printf("    sw $t1, %s  # : %s :\n\n", stREF->name, stREF->name);
+        }
+        else{
+          printf("    sw $t1, -%d($fp)  # : %s :\n\n", LHSLocation, stREF->name);
+        }
     }
     else{
         InfoNode* node = (InfoNode*) quad->dest;

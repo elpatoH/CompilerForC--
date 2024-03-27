@@ -1,15 +1,16 @@
-int x, y, u, v, w;
+int x;
 
+/*
 int g(int v) {
     println(v);
 }
 
 int f(int u) {
-    x = u;
-    g(x);
+    g(u);
 }
+*/
 
 int main() {
     x = 12345;
-    f(x);
+    println(x);
 }

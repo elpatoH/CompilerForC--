@@ -73,7 +73,7 @@ ASTnode* fn_call();
 ASTnode* opt_expr_list(int* argumentCount);
 void formals(int* argCount);
 void var_decl();
-void id_list();
+void id_list(bool global);
 void error(char* expected);
 ASTnode* return_stmt();
 ASTnode* arith_exp();
@@ -544,14 +544,14 @@ void var_decl(){
         }
     }
 
-    id_list();
+    id_list(false);
     match(SEMI);
 }
 
 /*
 to call id_list you need to match(ID) before function call
 */
-void id_list() {
+void id_list(bool global) {
     //tail recursion optimization
     while (curr_tok == COMMA) {
         match(COMMA);
@@ -564,7 +564,12 @@ void id_list() {
 
             //if it doesn't exists and the declaration is in the global scope
             if (!found){
-                addVariableToScope(&symbolTable, currentID, "int variable", "", NULL);
+                if (global){
+                    addVariableToScope(&symbolTable, currentID, "int variable", "global", NULL);
+                }
+                else{
+                    addVariableToScope(&symbolTable, currentID, "int variable", "", NULL);
+                }
             }
             else{
                 error("variable redeclaration");
@@ -574,6 +579,7 @@ void id_list() {
 }
 
 void prog(){
+    bool firstTime = true;
     //tail recursion optimization
     while(curr_tok == kwINT){
         type();
@@ -581,6 +587,10 @@ void prog(){
         match(ID);
 
         if (curr_tok == LPAREN) {
+            if (firstTime == true){
+                firstTime = false;
+                generateGlobalVariables();
+            }
             func_defn();
             //printSymbolTable(symbolTable);
         } else {
@@ -590,14 +600,14 @@ void prog(){
 
                 //if it doesn't exists and the declaration is in the global scope
                 if (!found){
-                    addVariableToScope(&symbolTable, currentID, "int variable", "", NULL);
+                    addVariableToScope(&symbolTable, currentID, "int variable", "global", NULL);
                 }
                 else{
                     error("variable redeclaration");
                 }
             }
 
-            id_list();
+            id_list(true);
             match(SEMI);
         }
 

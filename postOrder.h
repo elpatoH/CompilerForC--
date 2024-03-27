@@ -18,6 +18,7 @@ void codeGen_expr(ASTnode* e);
 InfoNode* newtemp(char* type);
 Quad* newinstr(NodeType op, void* src1, void* src2, void* dest);
 Quad* newlabel();
+void generateGlobalVariables();
 void visit(ASTnode* node);
 
 
