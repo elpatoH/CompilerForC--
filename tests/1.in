@@ -1,3 +1,5 @@
-int main(){
-  println(3456);
+int z() {
+    int temp0;
+    temp0 = 3;
+    println(temp0);
 }

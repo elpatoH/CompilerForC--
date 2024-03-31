@@ -519,6 +519,7 @@ ASTnode* func_defn(){
     if (gen_code_flag){
         postOrderTraversal(ast);
         generateCode(ast);
+        fflush(stdout);
     }
 
     currentScope--;
@@ -579,7 +580,6 @@ void id_list(bool global) {
 }
 
 void prog(){
-    bool firstTime = true;
     //tail recursion optimization
     while(curr_tok == kwINT){
         type();
@@ -587,10 +587,6 @@ void prog(){
         match(ID);
 
         if (curr_tok == LPAREN) {
-            if (firstTime == true){
-                firstTime = false;
-                generateGlobalVariables();
-            }
             func_defn();
             //printSymbolTable(symbolTable);
         } else {
@@ -609,6 +605,7 @@ void prog(){
 
             id_list(true);
             match(SEMI);
+            generateGlobalVariables();
         }
 
         //printSymbolTable(symbolTable);

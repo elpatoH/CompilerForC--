@@ -82,7 +82,7 @@ void codeGen_expr(ASTnode* e){
                 temp = temp->next;
             }
             Quad* leaveQuad = newinstr(LEAVE, stREF, NULL, NULL);
-            Quad* returnQuad = newinstr(RETURN, NULL, NULL, NULL);
+            Quad* returnQuad = newinstr(RETURN, stREF, NULL, NULL);
             temp->next = leaveQuad;
             leaveQuad->next = returnQuad;
             break;
@@ -132,7 +132,7 @@ void codeGen_expr(ASTnode* e){
         }
         case FUNC_CALL: {
             ASTnode* arglist = (ASTnode*) func_call_args(e);
-            codeGen_expr(arglist); 
+            codeGen_expr(arglist);
 
             //if statement to check if return type of func_call is void
             //if void then no need to set e.place
@@ -167,6 +167,7 @@ void codeGen_expr(ASTnode* e){
 
             //last instruction is CALL
             Quad* temp = e->code;
+            if (temp == NULL){e->code = newinstr(CALL, stREF, NULL, NULL); break;}
             while(temp->next != NULL){
                 temp = temp->next;
             }
@@ -205,8 +206,7 @@ void codeGen_expr(ASTnode* e){
         }
         case IDENTIFIER: {
             InfoNode* stREF = findVariableInAllScopes(symbolTable, e->nameF);
-            if (stREF == NULL) printf("wtf\n");
-            fflush(stdout);
+            if (stREF == NULL) return;
             e->code = newinstr(VAR, NULL, NULL, stREF);
             break;
         }
@@ -311,7 +311,14 @@ void printVAR(Quad* quad){
 
 //end epilogue
 void printRETURN(Quad* quad){
-    printf("jr $ra\n\n");
+    InfoNode* node = quad->src1;
+    if (strcmp(node->name, "main") == 0){
+      printf("li $v0, 10\n");
+      printf("syscall\n");
+    }
+    else{
+      printf("jr $ra\n\n");
+    }   
 }
 
 //start epilogue
@@ -350,7 +357,7 @@ void printCALL(Quad* quad){
     printf("    jal %s\n", stRef->name);
     int* paramC = stRef->argCount;
     int restoreSpace = *paramC*4;
-    printf("    addiu $sp, $sp %d\n\n", restoreSpace);
+    printf("    addiu $sp, $sp, %d\n\n", restoreSpace);
 }
 
 void printPARAM(Quad* quad){
@@ -400,14 +407,27 @@ void printASSG(Quad* quad){
           printf("    lw $t1, %d($fp)\n", location);
         }
         else{
-          printf("    lw $t1, -%d($fp)\n", location);
+          if (strcmp(node->info, "global") == 0){
+            printf("    la $t1, %s\n", name);
+            printf("    lw $t1, 0($t1)\n");
+          }
+          else{
+            printf("    lw $t1, -%d($fp)\n", location);
+          }
         }
 
         if (strcmp(stREF->info, "global") == 0){
           printf("    sw $t1, %s  # : %s :\n\n", stREF->name, stREF->name);
         }
         else{
-          printf("    sw $t1, -%d($fp)  # : %s :\n\n", LHSLocation, stREF->name);
+          if (strcmp(stREF->info, "arg") == 0){
+            int* argLoc = stREF->argCount;
+            int LHSArgLocation =  *argLoc * 4 + 8;
+            printf("    sw $t1, %d($fp)  # : %s :\n\n", LHSArgLocation, stREF->name);
+          }
+          else{
+            printf("    sw $t1, -%d($fp)  # : %s :\n\n", LHSLocation, stREF->name);
+          }
         }
     }
     else{

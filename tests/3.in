@@ -1,16 +1,20 @@
-int x;
-
 /*
-int g(int v) {
-    println(v);
+something about a function calling 2 functions makes the $ra corrupt
+*/
+int g() {
+    println(1);
 }
 
-int f(int u) {
-    g(u);
+int joto() {
+    println(1);
 }
-*/
+
+int f() {
+    g();
+    joto();
+}
 
 int main() {
-    x = 12345;
-    println(x);
+    f();
+
 }
