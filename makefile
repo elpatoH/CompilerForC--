@@ -17,11 +17,14 @@ ast.o : ast.c ast.h
 ast-print.o : ast-print.c
 	gcc -Wall -g -c ast-print.c
 
+generateCode.o : generateCode.c generateCode.h
+	gcc -Wall -g -c generateCode.c
+
 postOrder.o : postOrder.c postOrder.h
 	gcc -Wall -g -c postOrder.c
 
-compile : scanner.o parser.o driver.o symbolTable.o ast.o postOrder.o ast-print.o
-	gcc -Wall -g scanner.o symbolTable.o parser.o driver.o ast.o ast-print.o postOrder.o  -o compile
+compile : scanner.o parser.o driver.o symbolTable.o ast.o postOrder.o ast-print.o generateCode.o
+	gcc -Wall -g scanner.o symbolTable.o parser.o driver.o ast.o ast-print.o postOrder.o generateCode.o -o compile
 
 clean :
 	rm -f scanner compile *.o

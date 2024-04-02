@@ -13,6 +13,7 @@ REFORMAT comment is for changing function names to something more fitting
 #include "symbolTable.h"
 #include "postOrder.h"
 #include "ast.h"
+#include "generateCode.h"
 
 extern int get_token();
 extern int line_num;

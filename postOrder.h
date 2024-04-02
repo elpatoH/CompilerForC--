@@ -7,7 +7,9 @@ static int label_num = 0;
 static int name_num = 0;
 extern ScopeNode* symbolTable;
 
-void generateCode(ASTnode* tree);
+
+char *operationName(NodeType ntype);
+
 void postOrderTraversal(ASTnode* node);
 void codeGen_expr(ASTnode* e);
 //write following functions and keep on writing the codeGen_stmt,

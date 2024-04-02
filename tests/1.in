@@ -1,5 +1,18 @@
-int z() {
-    int temp0;
-    temp0 = 3;
-    println(temp0);
+int x, u;
+
+int main() {
+    int y, v;
+    
+    x = 1;
+    y = 0;
+    u = 123;
+    v = 456;
+
+    if (111 > y) 
+        println(u);
+    else
+        println(v);
+        
+    println(x);
+    println(y);
 }

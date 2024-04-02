@@ -44,7 +44,8 @@ typedef enum {
   PARAM,
   CALL,
   LEAVE,
-  VAR
+  VAR,
+  GOTO
 } NodeType;
 
 typedef struct Quad {
