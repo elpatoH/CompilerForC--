@@ -8,7 +8,7 @@ int main() {
     u = 123;
     v = 456;
 
-    if (111 > y) 
+    if (x > y) 
         println(u);
     else
         println(v);

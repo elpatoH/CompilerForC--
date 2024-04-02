@@ -69,7 +69,7 @@ void printQuad(Quad *quad)
 		Quad* opr2Quad = opr2->code;
 		InfoNode* opr2Node = (InfoNode*) opr2Quad->dest;
 
-		printf("sw $t3, ");
+		printf("\tlw $t3, ");
 		//global no location
 		if (strcmp(opr1Node->info, "global") == 0){
 			printf("%s\n", opr1Node->name);
@@ -98,9 +98,9 @@ void printQuad(Quad *quad)
 			printf("-%d($fp)\n", location);
 		}
 
-		/*now for opr2 in $t4*/
+		/* - now for opr2 in $t4 - */
 
-		printf("sw $t4, ");
+		printf("\tlw $t4, ");
 		//global no location
 		if (strcmp(opr2Node->info, "global") == 0){
 			printf("%s\n", opr2Node->name);
@@ -130,8 +130,29 @@ void printQuad(Quad *quad)
 		}
 
 		//now compare both
-
-		printf("ahi: %s\n", opr1Node->info);
+		switch (quad->op){
+			case EQ: printf("\tseq $t5, $t3, $t4\n"); break;
+			case NE: printf("\tsne $t5, $t3, $t4\n"); break;
+			case LE: printf("\tsle $t5, $t3, $t4\n"); break;
+			case LT: printf("\tslt $t5, $t3, $t4\n"); break;
+			case GE: printf("\tsge $t5, $t3, $t4\n"); break;
+			case GT: printf("\tsgt $t5, $t3, $t4\n"); break;
+			default: printf("not valid comparison\n"); exit(2);
+		}
+		Quad* dest = (Quad*) quad->dest;
+		int* labelNumber = (int*) dest->src1;
+		printf("\tbnez $t5, label_%d\n", *labelNumber);
+		break;
+	}
+	case GOTO:{
+		Quad* dest = (Quad*) quad->dest;
+		int* labelNumber = (int*) dest->src1;
+		printf("\tb label_%d\n", *labelNumber);
+		break;
+	}
+	case LABEL:{
+		int* labelNumber = (int*) quad->src1;
+		printf("\nlabel_%d:\n", *labelNumber);
 		break;
 	}
 	default:
