@@ -125,8 +125,12 @@ void codeGen_expr(ASTnode *e)
 		Quad* label_after = newlabel();
 		
 		codeGen_bool(if_expr, label_then, label_else);
-		codeGen_expr(if_then);
-		codeGen_expr(if_else);
+		if (if_then != NULL){
+			codeGen_expr(if_then);
+		}
+		if (if_else != NULL){
+			codeGen_expr(if_else);
+		}
 		e->code = if_expr->code;
 
 		// point to last
@@ -143,10 +147,12 @@ void codeGen_expr(ASTnode *e)
 			lastPointer = lastPointer->next;
 		}
 
-		lastPointer->next = if_then->code;
-		while (lastPointer->next != NULL)
-		{
-			lastPointer = lastPointer->next;
+		if (if_then != NULL){
+			lastPointer->next = if_then->code;
+			while (lastPointer->next != NULL)
+			{
+				lastPointer = lastPointer->next;
+			}
 		}
 
 		lastPointer->next = newinstr(GOTO, NULL, NULL, label_after);
@@ -161,10 +167,12 @@ void codeGen_expr(ASTnode *e)
 			lastPointer = lastPointer->next;
 		}
 
-		lastPointer->next = if_else->code;
-		while (lastPointer->next != NULL)
-		{
-			lastPointer = lastPointer->next;
+		if (if_else != NULL){
+			lastPointer->next = if_else->code;
+			while (lastPointer->next != NULL)
+			{
+				lastPointer = lastPointer->next;
+			}
 		}
 
 		lastPointer->next = label_after;

@@ -1,22 +1,18 @@
-int x, u;
-
 int main() {
-    x = 7;
-    while (x > 1) {
-        println(2581104);
-        if (x > 9){
-            x = 9;
-        }
-        else if (x > 8)
-            x = 0;
-        else
-            return;
-    }
-
-    /*
-    while (x > 0)
-    if (x != 0)
-      f(x, 0, 25);
-    */
-    println(x);
+  if (1 == 1) {
+    println(1);
+    if (1 == 1) println(2);
+    if (1 == 2)
+      if (1 == 2) println(0);
+      else if (1 == 2) println(0);
+      else println(0);
+    else if (1 == 2) println(0);
+    else if (1 == 1) println(3);
+    else if (1 == 0) println(0);
+    else println(0);
+    println(4);
+  }
+  else println(0);
+  println(5);
 }
+/* Should print 1 2 3 4 5 */
