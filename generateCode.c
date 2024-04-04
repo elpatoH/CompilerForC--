@@ -72,7 +72,7 @@ void printQuad(Quad *quad)
 		printf("\tlw $t3, ");
 		//global no location
 		if (strcmp(opr1Node->info, "global") == 0){
-			printf("%s\n", opr1Node->name);
+			printf("_%s\n", opr1Node->name);
 		}
 
 		//int variable in the negs init +4
@@ -103,7 +103,7 @@ void printQuad(Quad *quad)
 		printf("\tlw $t4, ");
 		//global no location
 		if (strcmp(opr2Node->info, "global") == 0){
-			printf("%s\n", opr2Node->name);
+			printf("_%s\n", opr2Node->name);
 		}
 
 		//int variable in the negs init +4
@@ -226,8 +226,14 @@ void printFUNDEF(Quad *quad)
 	int localC = getLocalCount(symbolTable);
 	int frame_size = 4 * (tempC + localC);
 
-	printf(".globl %s\n", node->name);
-	printf("%s:\n", node->name);
+	if (strcmp(node->name, "main") == 0){
+		printf(".globl %s\n", node->name);
+		printf("%s:\n", node->name);
+	}
+	else{
+		printf(".globl _%s\n", node->name);
+		printf("_%s:\n", node->name);
+	}
 	printf("    addiu $sp, $sp, -8     # 2 slots for fp and ra\n");
 	printf("    sw $fp, 4($sp)         # Save the old frame pointer\n");
 	printf("    sw $ra, 0($sp)         # Save the return address\n");
@@ -242,7 +248,7 @@ void printFUNDEF(Quad *quad)
 void printCALL(Quad *quad)
 {
 	InfoNode *stRef = (InfoNode *)quad->src1;
-	printf("    jal %s\n", stRef->name);
+	printf("    jal _%s\n", stRef->name);
 	int *paramC = stRef->argCount;
 	int restoreSpace = *paramC * 4;
 	printf("    addiu $sp, $sp, %d\n\n", restoreSpace);
@@ -263,7 +269,7 @@ void printPARAM(Quad *quad)
 	}
 	else if (strcmp(node->type, "int variable") == 0 && strcmp(node->info, "global") == 0)
 	{
-		printf("    lw $t0, %s\n", node->name);
+		printf("    lw $t0, _%s\n", node->name);
 	}
 	// its an int variable and its not and argument
 	else if (strcmp(node->type, "int variable") == 0 && strcmp(node->info, "arg") != 0)
@@ -308,7 +314,7 @@ void printASSG(Quad *quad)
 		{
 			if (strcmp(node->info, "global") == 0)
 			{
-				printf("    la $t1, %s\n", name);
+				printf("    la $t1, _%s\n", name);
 				printf("    lw $t1, 0($t1)\n");
 			}
 			else
@@ -319,7 +325,7 @@ void printASSG(Quad *quad)
 
 		if (strcmp(stREF->info, "global") == 0)
 		{
-			printf("    sw $t1, %s  # : %s :\n\n", stREF->name, stREF->name);
+			printf("    sw $t1, _%s  # : _%s :\n\n", stREF->name, stREF->name);
 		}
 		else
 		{
@@ -327,11 +333,11 @@ void printASSG(Quad *quad)
 			{
 				int *argLoc = stREF->argCount;
 				int LHSArgLocation = *argLoc * 4 + 8;
-				printf("    sw $t1, %d($fp)  # : %s :\n\n", LHSArgLocation, stREF->name);
+				printf("    sw $t1, %d($fp)  # : _%s :\n\n", LHSArgLocation, stREF->name);
 			}
 			else
 			{
-				printf("    sw $t1, -%d($fp)  # : %s :\n\n", LHSLocation, stREF->name);
+				printf("    sw $t1, -%d($fp)  # : _%s :\n\n", LHSLocation, stREF->name);
 			}
 		}
 	}

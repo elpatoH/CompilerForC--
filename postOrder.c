@@ -24,7 +24,7 @@ void generateGlobalVariables()
 				printf(".data\n");
 			}
 			char *name = variable->name;
-			printf("%s : .word 0\n", name);
+			printf("_%s : .word 0\n", name);
 		}
 		variable = variable->next;
 	}
@@ -189,7 +189,9 @@ void codeGen_expr(ASTnode *e)
 		ASTnode* body = stmt_while_body(e); // S
 
 		codeGen_bool(expr, label_body, label_after);
-		codeGen_expr(body);
+		if (body != NULL){
+			codeGen_expr(body);
+		}
 
 		// Ltop
 		e->code = label_top;
@@ -216,11 +218,13 @@ void codeGen_expr(ASTnode *e)
 		}
 
 		//S1.code
-		temp->next = body->code;
+		if (body != NULL){
+			temp->next = body->code;
 
-		temp = e->code;
-		while(temp->next != NULL){
-			temp = temp->next;
+			temp = e->code;
+			while(temp->next != NULL){
+				temp = temp->next;
+			}
 		}
 
 		//newinst

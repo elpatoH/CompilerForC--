@@ -606,7 +606,9 @@ void prog(){
 
             id_list(true);
             match(SEMI);
-            generateGlobalVariables();
+            if (gen_code_flag){
+                generateGlobalVariables();
+            }
         }
 
         //printSymbolTable(symbolTable);
@@ -646,7 +648,7 @@ int parse(){
         if (gen_code_flag){
             *argCountForPrintF = 1;
             addVariableToScope(&symbolTable, "println", "function", "", argCountForPrintF);
-            char* printlnF = ".data\n_nl: .asciiz \"\\n\"\n.text\n.globl println\nprintln:\n\taddiu $sp, $sp, -8\n\tsw $fp, 4($sp)\n\tsw $ra, 0($sp)\n\tmove $fp, $sp\n\tlw   $a0, 8($fp)\n\tli   $v0, 1\n\tsyscall\n\tla   $a0, _nl\n\tli   $v0, 4\n\tsyscall\n\tmove $sp, $fp\n\tlw $ra, 0($sp)\n\tlw $fp, 4($sp)\n\taddiu $sp, $sp, 8\njr   $ra\n\n";
+            char* printlnF = ".data\n_nl: .asciiz \"\\n\"\n.text\n.globl _println\n_println:\n\taddiu $sp, $sp, -8\n\tsw $fp, 4($sp)\n\tsw $ra, 0($sp)\n\tmove $fp, $sp\n\tlw   $a0, 8($fp)\n\tli   $v0, 1\n\tsyscall\n\tla   $a0, _nl\n\tli   $v0, 4\n\tsyscall\n\tmove $sp, $fp\n\tlw $ra, 0($sp)\n\tlw $fp, 4($sp)\n\taddiu $sp, $sp, 8\njr   $ra\n\n";
             fprintf(stdout, "%s", printlnF);
             fflush(stdout);
         }
