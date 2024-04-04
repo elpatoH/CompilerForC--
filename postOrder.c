@@ -167,6 +167,63 @@ void codeGen_expr(ASTnode *e)
 
 		break;
 	}
+	case WHILE: 
+	{
+		Quad* label_top = newlabel();
+		Quad* label_body = newlabel();
+		Quad* label_after = newlabel();
+
+		ASTnode* expr = stmt_while_expr(e); // B
+		ASTnode* body = stmt_while_body(e); // S
+
+		codeGen_bool(expr, label_body, label_after);
+		codeGen_expr(body);
+
+		// Ltop
+		e->code = label_top;
+
+		Quad* temp = e->code;
+		while(temp->next != NULL){
+			temp = temp->next;
+		}
+
+		//B.code
+		temp->next = expr->code;
+
+		temp = e->code;
+		while(temp->next != NULL){
+			temp = temp->next;
+		}
+
+		//Lbody
+		temp->next = label_body;
+
+		temp = e->code;
+		while(temp->next != NULL){
+			temp = temp->next;
+		}
+
+		//S1.code
+		temp->next = body->code;
+
+		temp = e->code;
+		while(temp->next != NULL){
+			temp = temp->next;
+		}
+
+		//newinst
+		temp->next = newinstr(GOTO, NULL, NULL, label_top);
+
+		temp = e->code;
+		while(temp->next != NULL){
+			temp = temp->next;
+		}
+
+		//Lafter
+		temp->next = label_after;
+
+		break;
+	}
 	case ASSG:
 	{
 

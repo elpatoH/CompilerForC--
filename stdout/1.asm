@@ -31,7 +31,7 @@ main:
     sw $fp, 4($sp)         # Save the old frame pointer
     sw $ra, 0($sp)         # Save the return address
     move $fp, $sp          # Set the new frame pointer
-    addiu $sp, $sp, -24    # tmps: 4, locals: 2
+    addiu $sp, $sp, -32    # tmps: 6, locals: 2
 
     li $t0, 1
     sw $t0, -4($fp)
@@ -83,6 +83,31 @@ label_1:
 
 
 label_2:
+
+label_3:
+    li $t0, 0
+    sw $t0, -28($fp)
+
+	lw $t3, x
+	lw $t4, -28($fp)
+	sgt $t5, $t3, $t4
+	bnez $t5, label_4
+	b label_5
+
+label_4:
+    li $t0, 2581104
+    sw $t0, -32($fp)
+
+    lw $t0, -32($fp)
+    addiu $sp, $sp, -4
+    sw $t0, 0($sp)
+
+    jal println
+    addiu $sp, $sp, 4
+
+	b label_3
+
+label_5:
     lw $t0, x
     addiu $sp, $sp, -4
     sw $t0, 0($sp)
@@ -101,6 +126,6 @@ label_2:
     move $sp, $fp
     lw $ra, 0($sp)
     lw $fp, 4($sp)
-    addiu $sp, $sp, 24
+    addiu $sp, $sp, 32
 li $v0, 10
 syscall

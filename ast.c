@@ -122,7 +122,7 @@ void *expr_list_rest(void *ptr)
 char *expr_id_name(void *ptr)
 {
     ASTnode* node = (ASTnode*) ptr;
-    if (node->ntype != IDENTIFIER) {printf("not an identifier.\n"); exit(1);};
+    if (node->ntype != IDENTIFIER) {printf("not an identifier. (expr_id_name)\n"); exit(1);};
     return node->nameF;
 }
 
@@ -174,14 +174,14 @@ void *stmt_if_else(void *ptr)
 char *stmt_assg_lhs(void *ptr)
 {
     ASTnode* node = (ASTnode*) ptr;
-    if (node->ntype != ASSG) {printf("not an assignment.\n"); exit(1);};
+    if (node->ntype != ASSG) {printf("not an assignment. (stmt_assg_lhs)\n"); exit(1);};
     return node->nameF;
 }
 
 void *stmt_assg_rhs(void *ptr)
 {
     ASTnode* node = (ASTnode*) ptr;
-    if (node->ntype != ASSG) {printf("not an assignment.\n"); exit(1);};
+    if (node->ntype != ASSG) {printf("not an assignment. (stmt_assg_rhs)\n"); exit(1);};
     return node->child0;
 }
 
@@ -192,20 +192,20 @@ void *stmt_assg_rhs(void *ptr)
 void *stmt_while_expr(void *ptr)
 {
     ASTnode* node = (ASTnode*) ptr;
-    if (node->ntype != WHILE) {printf("not an assignment.\n"); exit(1);};
+    if (node->ntype != WHILE) {printf("not a while ntype. (stmt_while_expr)\n"); exit(1);};
     return node->child0;
 }
 
 void *stmt_while_body(void *ptr)
 {
     ASTnode* node = (ASTnode*) ptr;
-    if (node->ntype != WHILE) {printf("not an assignment.\n"); exit(1);};
+    if (node->ntype != WHILE) {printf("not a while ntype. (stmt_while_body)\n"); exit(1);};
     return node->child1;
 }
 
 void *stmt_return_expr(void *ptr)
 {
     ASTnode* node = (ASTnode*) ptr;
-    if (node->ntype != RETURN) {printf("not an assignment.\n"); exit(1);};
+    if (node->ntype != RETURN) {printf("not a return ntype. (stmt_return_expr)\n"); exit(1);};
     return node->child0;
 }

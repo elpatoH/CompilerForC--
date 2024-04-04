@@ -12,7 +12,15 @@ int main() {
         println(u);
     else
         println(v);
-        
+
+    while (x > 0) 
+        println(2581104);
+
+    /*
+    while (x > 0)
+    if (x != 0)
+      f(x, 0, 25);
+    */
     println(x);
     println(y);
 }
