@@ -1,20 +1,20 @@
 /*
 something about a function calling 2 functions makes the $ra corrupt
 */
-int g() {
+int second() {
     println(1);
 }
 
-int joto() {
-    println(1);
+int third() {
+    println(2);
 }
 
-int f() {
-    g();
-    joto();
+int firstCall() {
+    second();
+    third();
 }
 
 int main() {
-    f();
+    firstCall();
 
 }

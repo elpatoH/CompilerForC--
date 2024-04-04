@@ -216,7 +216,7 @@ void printLEAVE(Quad *quad)
 	printf("\n    move $sp, $fp\n");
 	printf("    lw $ra, 0($sp)\n");
 	printf("    lw $fp, 4($sp)\n");
-	printf("    addiu $sp, $sp, %d\n", frame_size);
+	printf("    addiu $sp, $sp, %d\n", frame_size - 4);
 }
 
 void printFUNDEF(Quad *quad)

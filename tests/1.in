@@ -1,18 +1,4 @@
 int main() {
-  if (1 == 1) {
-    println(1);
-    if (1 == 1) println(2);
-    if (1 == 2)
-      if (1 == 2) println(0);
-      else if (1 == 2) println(0);
-      else println(0);
-    else if (1 == 2) println(0);
-    else if (1 == 1) println(3);
-    else if (1 == 0) println(0);
-    else println(0);
-    println(4);
-  }
-  else println(0);
-  println(5);
+    if (1 == 1) if (3 == 3) println(1);
+    else println(3);
 }
-/* Should print 1 2 3 4 5 */
