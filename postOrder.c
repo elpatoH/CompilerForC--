@@ -1,5 +1,8 @@
 #include "postOrder.h"
 
+//global for return case
+char* current_function_name ;
+
 void codeGen_bool(ASTnode* e, Quad* trueDst, Quad* falseDst);
 
 void generateGlobalVariables()
@@ -57,12 +60,13 @@ void codeGen_expr(ASTnode *e)
 		// char* name = func_def_name(e);
 		// get args and do something with them
 		ASTnode *body = func_def_body(e);
+		char *name = func_def_name(e);
+		current_function_name = name;
 		if (body != NULL)
 		{
 			codeGen_expr(body);
 		}
 
-		char *name = func_def_name(e);
 		ScopeNode *globalScope = getLastScope(symbolTable);
 		InfoNode *stREF = findFunctionInScopeAndGetArgCount(globalScope, name);
 
@@ -250,6 +254,18 @@ void codeGen_expr(ASTnode *e)
 
 		// save location where it is being saved
 		//  and add new inst for assignemnt to
+		break;
+	}
+	case RETURN:
+	{
+		ScopeNode *globalScope = getLastScope(symbolTable);
+		InfoNode *stREF = findFunctionInScopeAndGetArgCount(globalScope, current_function_name);
+
+		Quad *leaveQuad = newinstr(LEAVE, stREF, NULL, NULL);
+		Quad *returnQuad = newinstr(RETURN, stREF, NULL, NULL);
+
+		e->code = leaveQuad;
+		e->code->next = returnQuad;
 		break;
 	}
 	case FUNC_CALL:

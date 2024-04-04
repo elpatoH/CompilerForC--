@@ -7,7 +7,7 @@
         "name": "(lldb) Launch",
         "type": "cppdbg",
         "request": "launch",
-        "program": "/Users/danig/code/csc/453/ms/6/compile",
+        "program": "/Users/danig/code/csc/453/ms/7/compile",
         "args": ["--chk_decl", "--gen_code"],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",

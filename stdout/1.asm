@@ -31,91 +31,89 @@ main:
     sw $fp, 4($sp)         # Save the old frame pointer
     sw $ra, 0($sp)         # Save the return address
     move $fp, $sp          # Set the new frame pointer
-    addiu $sp, $sp, -32    # tmps: 6, locals: 2
+    addiu $sp, $sp, -28    # tmps: 7, locals: 0
 
-    li $t0, 1
+    li $t0, 7
     sw $t0, -4($fp)
 
     lw $t1, -4($fp)
     sw $t1, x  # : x :
 
-    li $t0, 0
-    sw $t0, -8($fp)
-
-    lw $t1, -8($fp)
-    sw $t1, -12($fp)  # : y :
-
-    li $t0, 123
-    sw $t0, -16($fp)
-
-    lw $t1, -16($fp)
-    sw $t1, u  # : u :
-
-    li $t0, 456
-    sw $t0, -20($fp)
-
-    lw $t1, -20($fp)
-    sw $t1, -24($fp)  # : v :
-
-	lw $t3, x
-	lw $t4, -12($fp)
-	sgt $t5, $t3, $t4
-	bnez $t5, label_0
-	b label_1
 
 label_0:
-    lw $t0, u
-    addiu $sp, $sp, -4
-    sw $t0, 0($sp)
+    li $t0, 1
+    sw $t0, -8($fp)
 
-    jal println
-    addiu $sp, $sp, 4
-
+	lw $t3, x
+	lw $t4, -8($fp)
+	sgt $t5, $t3, $t4
+	bnez $t5, label_1
 	b label_2
 
 label_1:
-    lw $t0, -24($fp)
+    li $t0, 2581104
+    sw $t0, -12($fp)
+
+    lw $t0, -12($fp)
     addiu $sp, $sp, -4
     sw $t0, 0($sp)
 
     jal println
     addiu $sp, $sp, 4
 
-
-label_2:
-
-label_3:
-    li $t0, 0
-    sw $t0, -28($fp)
+    li $t0, 9
+    sw $t0, -16($fp)
 
 	lw $t3, x
-	lw $t4, -28($fp)
+	lw $t4, -16($fp)
 	sgt $t5, $t3, $t4
-	bnez $t5, label_4
+	bnez $t5, label_3
+	b label_4
+
+label_3:
+    li $t0, 9
+    sw $t0, -20($fp)
+
+    lw $t1, -20($fp)
+    sw $t1, x  # : x :
+
 	b label_5
 
 label_4:
-    li $t0, 2581104
-    sw $t0, -32($fp)
+    li $t0, 8
+    sw $t0, -24($fp)
 
-    lw $t0, -32($fp)
-    addiu $sp, $sp, -4
-    sw $t0, 0($sp)
+	lw $t3, x
+	lw $t4, -24($fp)
+	sgt $t5, $t3, $t4
+	bnez $t5, label_6
+	b label_7
 
-    jal println
-    addiu $sp, $sp, 4
+label_6:
+    li $t0, 0
+    sw $t0, -28($fp)
 
-	b label_3
+    lw $t1, -28($fp)
+    sw $t1, x  # : x :
+
+	b label_8
+
+label_7:
+
+    move $sp, $fp
+    lw $ra, 0($sp)
+    lw $fp, 4($sp)
+    addiu $sp, $sp, 36
+li $v0, 10
+syscall
+
+label_8:
 
 label_5:
+	b label_0
+
+label_2:
     lw $t0, x
-    addiu $sp, $sp, -4
-    sw $t0, 0($sp)
-
-    jal println
-    addiu $sp, $sp, 4
-
-    lw $t0, -12($fp)
     addiu $sp, $sp, -4
     sw $t0, 0($sp)
 
@@ -126,6 +124,6 @@ label_5:
     move $sp, $fp
     lw $ra, 0($sp)
     lw $fp, 4($sp)
-    addiu $sp, $sp, 32
+    addiu $sp, $sp, 36
 li $v0, 10
 syscall
