@@ -317,6 +317,11 @@ void printASSG(Quad *quad)
 				printf("    la $t1, _%s\n", name);
 				printf("    lw $t1, 0($t1)\n");
 			}
+			else if (strcmp(node->info, "") == 0){
+				int* rhsLocation = node->location;
+				int rhsActualLocation = 4*(*rhsLocation) + 4;
+				printf("    lw $t1, -%d($fp) # popo\n", rhsActualLocation);
+			}
 			else
 			{
 				printf("    lw $t1, -%d($fp)\n", location);
@@ -334,6 +339,11 @@ void printASSG(Quad *quad)
 				int *argLoc = stREF->argCount;
 				int LHSArgLocation = *argLoc * 4 + 8;
 				printf("    sw $t1, %d($fp)  # : _%s :\n\n", LHSArgLocation, stREF->name);
+			}
+			else if (strcmp(stREF->info, "") == 0){
+				int* lhsLocation = stREF->location;
+				int lhsActualLocation = 4*(*lhsLocation) + 4;
+				printf("    sw $t1, -%d($fp) # popo\n", lhsActualLocation);
 			}
 			else
 			{
