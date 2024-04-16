@@ -175,7 +175,7 @@ ASTnode* fn_call(){
 }
 
 /*
-    ASTnode* arith_exp() {
+ASTnode* arith_exp() {
     ASTnode* ast_node = malloc(sizeof(ASTnode));
 
     if (curr_tok == ID){
@@ -296,7 +296,7 @@ ASTnode* assg_stmt() {
     if (chk_decl_flag){
         ScopeNode* current = symbolTable;
         while (current != NULL){
-            //REFORMAT
+            //REFORMAT to one function findVariableInScopeAndGetArgCount that does finding for you
             InfoNode* node = findVariableInScopeAndGetArgCount(current, currentID);
             if (node != NULL){
                 match(opASSG);
