@@ -28,3 +28,6 @@ compile : scanner.o parser.o driver.o symbolTable.o ast.o postOrder.o ast-print.
 
 clean :
 	rm -f scanner compile *.o
+
+run :
+	make compile && clear && cat tests/2.c | ./compile --print_ast

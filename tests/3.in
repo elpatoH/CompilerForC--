@@ -1,20 +1,11 @@
-/*
-something about a function calling 2 functions makes the $ra corrupt
-*/
-int second() {
-    println(1);
-}
+/* astgen: associativity of * and / operators together
+   with parenthesized subexpressions */
 
-int third() {
-    println(2);
-}
+int f() {
+    int x, y, u, v, w;
 
-int firstCall() {
-    second();
-    third();
-}
-
-int main() {
-    firstCall();
-
+    x = x * y / (u * v) / w;
+    x = x * y / ((u * v) / w);
+    y = x / (y * u / v) * w;
+    y = x / ((y * u / v) * w);
 }

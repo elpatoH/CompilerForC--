@@ -228,59 +228,159 @@ void arithOPAS(){
     }
 }
 
-void factor(){
+ASTnode* factor(){
+    ASTnode* ast_node = malloc(sizeof(ASTnode));
     if (curr_tok == ID){
-        match(ID);
+        //ast-print
+        ast_node->ntype = IDENTIFIER;
+        ast_node->nameF = malloc(strlen(lexeme) + 1);
+        strcpy(ast_node->nameF, lexeme);
+
+        if (chk_decl_flag){
+            currentID = lexeme;
+            bool found = findFunctionOrVariableInAllScopesByNameAndType(symbolTable, currentID, "int variable");
+            if (found){
+                match(ID);
+                return ast_node;
+            }
+            else{
+                error("variable has not been declared");
+            }
+        }
+        else{
+            match(ID);
+            return ast_node;
+        }
     }
-    else if (curr_tok == INTCON){
+    else if(curr_tok == INTCON) {
+        //ast-print
+        ast_node->ntype = INTCONST;
+        ast_node->num = malloc(sizeof(int));
+        *(ast_node->num) = atoi(lexeme);
+
+        //add intcon into symbol table with tmpCount at end of name
+        //no need for above lmao
+
         match(INTCON);
+        return ast_node;
     }
     else if (curr_tok == LPAREN){
         match(LPAREN);
-        arith_exp();
+        ast_node = arith_exp();
         match(RPAREN);
+        return ast_node;
     }
     else if (curr_tok == opSUB){
+        ast_node->ntype = UMINUS;
         match(opSUB);
-        factor();
+        ast_node->child0 = factor();
+        return ast_node;
     }
     else{
         error("could not find factor");
     }
 }
 
-void term_tail(){
-    while (curr_tok == opMUL || curr_tok == opDIV){
-        if (curr_tok == opMUL){
+ASTnode* term_tail(ASTnode* overallNode){
+    if (curr_tok == opMUL){
+        overallNode->ntype = MUL;
         match(opMUL);
-        factor();
+        overallNode->child1 = factor();
+
+        //only recurse if more nodes
+        if (curr_tok == opMUL || curr_tok == opDIV){
+            ASTnode* newNode = malloc(sizeof(ASTnode));
+            newNode->child0 = overallNode;
+            newNode = term_tail(newNode);
+            return newNode;
         }
-        else if (curr_tok == opDIV){
-            match(opDIV);
-            factor();
-        }
+        return overallNode;
     }
+    else if (curr_tok == opDIV){
+        overallNode->ntype = DIV;
+        match(opDIV);
+        overallNode->child1 = factor();
+
+        //only recurse if more nodes
+        if (curr_tok == opMUL || curr_tok == opDIV){
+            ASTnode* newNode = malloc(sizeof(ASTnode));
+            newNode->child0 = overallNode;
+            newNode = term_tail(newNode);
+            return newNode;
+        }
+        return overallNode;
+    }
+    return overallNode;
     //can be empty
 }
 
-void term(){
-    factor();
-    term_tail();
+ASTnode* term(){
+    ASTnode* ast_node = malloc(sizeof(ASTnode));
+    ast_node->child0 = factor();
+    ast_node = term_tail(ast_node);
+    return ast_node;
 }
 
-void arith_exp_tail(){
-    //tail recursion optimization
-    while (curr_tok == opADD || curr_tok == opSUB){
-        arithOPAS();
+ASTnode* getChild(ASTnode* node){
+    if (node->ntype == DUMMY){
+        return node->child0;
+    }
+    else{
+        return node;
+    }
+}
+
+ASTnode* arith_exp_tail(ASTnode* overallNode){
+    //check at the start if its a dummy ntype then term only found an ID. if its MUL or DIV then it is a multiple operators on operands.
+    //if its dummy then set the ntype here and child1
+    //if its MUL or DIV then we need to create a new node set overallNode as child0 set ntype and set child1 to what we find here
+    if (curr_tok == opADD){
+        if (overallNode->ntype == DUMMY){
+            overallNode->ntype = ADD;
+            match(opADD);
+        
+            //will prob have to do same thing as above after term is done
+            ASTnode* someNode = term();
+            overallNode->child1 = getChild(someNode);
+
+            //only recurse if more nodes
+            if (curr_tok == opADD || curr_tok == opSUB){
+                ASTnode* newNode = malloc(sizeof(ASTnode));
+                newNode->child0 = overallNode;
+                newNode = arith_exp_tail(newNode);
+                return newNode;
+            }
+            return overallNode;
+        }
+        else{
+            ASTnode* newHeadNode = malloc(sizeof(ASTnode));
+            newHeadNode->child0 = overallNode;
+            printf("not implemented\n");
+        }
+        
+    }
+    else if (curr_tok == opSUB){
+        match(opSUB);
+
+        //will prob have to do same thing as above after term is done
         term();
+
+        //only recurse if more nodes
+        if (curr_tok == opADD || curr_tok == opSUB){
+            ASTnode* newNode = malloc(sizeof(ASTnode));
+            arith_exp_tail(newNode);
+        }
     }
     //can be empty
 }
 
 ASTnode* arith_exp() {
-    term();
-    arith_exp_tail();
-    return NULL;
+    //mul or div
+    ASTnode* node = term();
+
+    //add or sub
+    ASTnode* perro = arith_exp_tail(node);
+    return perro;
 }
 
 /*
