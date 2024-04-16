@@ -11,7 +11,7 @@
  * The enum Token defines integer values for the various tokens.  These
  * are the values returned by the scanner.
  */
-typedef enum {
+typedef enum TOKEN{
   UNDEF     /* undefined */,
   ID        /* identifier: e.g., x, abc, p_q_12 */,
   INTCON    /* integer constant: e.g., 12345 */,

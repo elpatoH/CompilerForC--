@@ -83,6 +83,7 @@ NodeType relop();
 ASTnode* expr_list(int* argumentCount);
 ASTnode* assg_stmt();
 ASTnode* if_stmt();
+ASTnode* bool_exp2();
 
 //function declarations
 ASTnode* expr_list(int* argumentCount){
@@ -173,7 +174,8 @@ ASTnode* fn_call(){
     return fn_call_ast;
 }
 
-ASTnode* arith_exp() {
+/*
+    ASTnode* arith_exp() {
     ASTnode* ast_node = malloc(sizeof(ASTnode));
 
     if (curr_tok == ID){
@@ -211,7 +213,74 @@ ASTnode* arith_exp() {
     else{
         error("invalid assignment right hand side");
     }
-    return ast_node;
+}
+*/
+
+void arithOPAS(){
+    if (curr_tok == opADD){
+        match(opADD);
+    }
+    else if (curr_tok == opSUB){
+        match(opSUB);
+    }
+    else{
+        error("unexpected operator, expected addition or subtraction");
+    }
+}
+
+void factor(){
+    if (curr_tok == ID){
+        match(ID);
+    }
+    else if (curr_tok == INTCON){
+        match(INTCON);
+    }
+    else if (curr_tok == LPAREN){
+        match(LPAREN);
+        arith_exp();
+        match(RPAREN);
+    }
+    else if (curr_tok == opSUB){
+        match(opSUB);
+        factor();
+    }
+    else{
+        error("could not find factor");
+    }
+}
+
+void term_tail(){
+    while (curr_tok == opMUL || curr_tok == opDIV){
+        if (curr_tok == opMUL){
+        match(opMUL);
+        factor();
+        }
+        else if (curr_tok == opDIV){
+            match(opDIV);
+            factor();
+        }
+    }
+    //can be empty
+}
+
+void term(){
+    factor();
+    term_tail();
+}
+
+void arith_exp_tail(){
+    //tail recursion optimization
+    while (curr_tok == opADD || curr_tok == opSUB){
+        arithOPAS();
+        term();
+    }
+    //can be empty
+}
+
+ASTnode* arith_exp() {
+    term();
+    arith_exp_tail();
+    return NULL;
 }
 
 /*
@@ -301,10 +370,50 @@ NodeType relop(){
         match(opGT);
         return GT;
     }
-    return DUMMY;
+    else{
+        error("returning dummy instead of relop");
+        return DUMMY;
+    }
+}
+
+void opt_and(){
+    if (curr_tok == opAND){
+        match(opAND);
+        bool_exp();
+    }
+    //can be empty
+}
+
+void bool_exp1(){
+    bool_exp2();
+    opt_and();
+}
+
+void opt_or(){
+    if (curr_tok == opOR){
+        match(opOR);
+        bool_exp();
+    }
+    //can be empty
 }
 
 ASTnode* bool_exp(){
+    bool_exp1();
+    opt_or();
+    return NULL;
+}
+
+/*
+ASTnode* bool_exp(){
+    ASTnode* exp_ast = malloc(sizeof(ASTnode));
+    exp_ast->child0 = arith_exp(); 
+    exp_ast->ntype = relop(); 
+    exp_ast->child1 = arith_exp();
+    return exp_ast;
+}
+*/
+
+ASTnode* bool_exp2(){
     ASTnode* exp_ast = malloc(sizeof(ASTnode));
     exp_ast->child0 = arith_exp(); 
     exp_ast->ntype = relop(); 
@@ -663,78 +772,12 @@ int parse(){
 }
 
 /*
-code generation notes.
-
-- all info in code generation 1 until slide 72
-
-– each instruction will be in this struct:
-    typedef struct {
-        enum OpType op; // PLUS, MINUS, etc.
-        Operand src1; // source operand 1
-        Operand src2; // source operand 2
-        ...
-    } Quad;
-
-At each syntax tree node:
-⚫ recursively process the children
-⚫ then generate code for this node
-⚫ then glue it all together
-
-- function for generating code for stmt:
-    codeGen_stmt(ASTnode *s)
-    {
-        switch (s->nodetype) {
-        case FOR: ... ; break;
-        case WHILE : ... ; break;
-        case IF: ... ; break;
-        case ‘=‘ : ... ; break;
-        ...
-    }
-
-- function for generating code for expression:
-    codeGen_expr(ASTnode *e)
-    {
-        switch (e->nodetype) {
-        case ‘+’: ... ; break;
-        case ‘*’ : ... ; break;
-        case ‘–’: ... ; break;
-        case ‘/’ : ... ; break;
-        ...
-    }
-
-Auxiliary routines
-• struct symtab_entry *newtemp(typename t) slide 29
-    − create a symbol table entry for a new temporary
-    − return a pointer to this ST entry.
-• struct instr *newlabel() slide 31
-    − return a new label instruction
-• struct instr *newinstr(op, arg1, arg2, ...) slide 30
-    − create a new instruction, fill in the arguments
-        supplied
-    − return a pointer to the result
-
-struct symtab_entry *newtemp( t )
-{
-    struct symtab_entry *ntmp = malloc( ... );
-    ntmp->name = ...create a new name that doesn’t conflict...
-    ntmp->type = t;
-    ...insert ntmp into the function's local symbol table...
-    return ntmp;
-}
-
-struct instr *newinstr(opType, src1, src2, dest)
-{
-    struct instr *ninstr = malloc( ... );
-    ninstr->op = opType;
-    ninstr->src1 = src1; ninstr->src2 = src2; ninstr->dest = dest;
-    return ninstr;
-}
-
-static int label_num = 0;
-struct instr *newlabel()
-{
-    return newinstr(LABEL, label_num++);
-}
-
+bool_exp : bool_exp1 opt_or
+opt_or : "||" bool_expr 
+| ε
+bool_exp1 : bool_exp2 opt_and
+opt_and : "&&" bool_expr
+| ε
+bool_exp2 : arith_exp relop arith_exp
 
 */

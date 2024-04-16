@@ -15,7 +15,7 @@
  *                                                                             *
  *******************************************************************************/
 
-typedef enum {
+typedef enum NodeType{
   DUMMY,            /* a placeholder */
   FUNC_DEF,         /* function definition */
   FUNC_CALL,        /* function call */
