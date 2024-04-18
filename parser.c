@@ -86,20 +86,20 @@ ASTnode* if_stmt();
 ASTnode* bool_exp2();
 ASTnode* bool_exp1();
 
-//function declarations
 ASTnode* expr_list(int* argumentCount){
     ASTnode* ast_node = arith_exp();
     (*argumentCount)++;
     return ast_node;
 }
 
+//need to refactor this so that it can accept a lot of other characters in the opt_expr_list
 ASTnode* opt_expr_list(int* argumentCount){
     ASTnode* ast_expr_list = createASTNode();
     ast_expr_list->ntype = EXPR_LIST;
     bool commaOn = false;
 
     //ε because expressions can be empty
-    while (curr_tok == ID || curr_tok == INTCON || commaOn){
+    while (curr_tok == ID || curr_tok == INTCON || commaOn || curr_tok == LPAREN || curr_tok == opSUB){
         ASTnode* ast_node = expr_list(argumentCount);
         commaOn = false;
 
@@ -178,26 +178,33 @@ ASTnode* fn_call(){
 ASTnode* factor(){
     ASTnode* ast_node = createASTNode();
     if (curr_tok == ID){
-        //ast-print
-        ast_node->ntype = IDENTIFIER;
-        ast_node->nameF = malloc(strlen(lexeme) + 1);
-        strcpy(ast_node->nameF, lexeme);
+        currentID = lexeme;
+        match(ID);
 
-        if (chk_decl_flag){
-            currentID = lexeme;
-            bool found = findFunctionOrVariableInAllScopesByNameAndType(symbolTable, currentID, "int variable");
-            if (found){
-                match(ID);
-                return ast_node;
-            }
-            else{
-                error("variable has not been declared");
-            }
-        }
-        else{
-            match(ID);
+        if (curr_tok == LPAREN){
+            ast_node = fn_call();
             return ast_node;
         }
+        else{
+            //ast-print
+            ast_node->ntype = IDENTIFIER;
+            ast_node->nameF = malloc(strlen(currentID) + 1);
+            strcpy(ast_node->nameF, currentID);
+
+            if (chk_decl_flag){
+                bool found = findFunctionOrVariableInAllScopesByNameAndType(symbolTable, currentID, "int variable");
+                if (found){
+                    return ast_node;
+                }
+                else{
+                    error("variable has not been declared");
+                }
+            }
+            else{
+                return ast_node;
+            }
+        }
+        
     }
     else if(curr_tok == INTCON) {
         //ast-print
@@ -277,7 +284,7 @@ ASTnode* term(){
 
     ast_node = term_tail(ast_node);
 
-    if ((someNode->ntype == IDENTIFIER || someNode->ntype == INTCONST) && ast_node->ntype == DUMMY){
+    if ((someNode->ntype == IDENTIFIER || someNode->ntype == INTCONST ||someNode->ntype == FUNC_CALL) && ast_node->ntype == DUMMY){
         ast_node = someNode;
     }
     return ast_node;
@@ -375,6 +382,9 @@ ASTnode* arith_exp() {
 
     //add or sub
     ASTnode* perro = arith_exp_tail(node);
+    if (perro->ntype == DUMMY){
+        perro = perro->child0;
+    }
     return perro;
 }
 
@@ -430,7 +440,7 @@ ASTnode* return_stmt(){
         return_ast->child0 = NULL;
         match(SEMI);
     }
-    else if (curr_tok == ID || curr_tok == INTCON){
+    else if (curr_tok == ID || curr_tok == INTCON || curr_tok == LPAREN || curr_tok == opSUB){
         return_ast->child0 = arith_exp();
         match(SEMI);
     }

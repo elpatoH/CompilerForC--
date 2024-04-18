@@ -30,4 +30,4 @@ clean :
 	rm -f scanner compile *.o
 
 run :
-	make compile && clear && cat tests/2.c | ./compile --print_ast --chk_decl
+	make compile && clear && cat tests/2.c | ./compile --print_ast --chk_decl ; make clean
