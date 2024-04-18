@@ -84,6 +84,7 @@ ASTnode* expr_list(int* argumentCount);
 ASTnode* assg_stmt();
 ASTnode* if_stmt();
 ASTnode* bool_exp2();
+ASTnode* bool_exp1();
 
 //function declarations
 ASTnode* expr_list(int* argumentCount){
@@ -93,7 +94,7 @@ ASTnode* expr_list(int* argumentCount){
 }
 
 ASTnode* opt_expr_list(int* argumentCount){
-    ASTnode* ast_expr_list = malloc(sizeof(ASTnode));
+    ASTnode* ast_expr_list = createASTNode();
     ast_expr_list->ntype = EXPR_LIST;
     bool commaOn = false;
 
@@ -111,7 +112,7 @@ ASTnode* opt_expr_list(int* argumentCount){
             while(cur->child1 != NULL){
                 cur = cur->child1;
             }
-            cur->child1 = malloc(sizeof(ASTnode));
+            cur->child1 = createASTNode();
             cur->child1->ntype = EXPR_LIST;
             cur->child1->child0 = ast_node;
         }
@@ -132,7 +133,7 @@ ASTnode* fn_call(){
     char* functionID = currentID;
 
     //initialize astnode
-    ASTnode* fn_call_ast = malloc(sizeof(ASTnode));
+    ASTnode* fn_call_ast = createASTNode();
     fn_call_ast->ntype = FUNC_CALL;
     fn_call_ast->nameF = malloc(strlen(functionID) + 1);
     strcpy(fn_call_ast->nameF, functionID);
@@ -174,62 +175,8 @@ ASTnode* fn_call(){
     return fn_call_ast;
 }
 
-/*
-ASTnode* arith_exp() {
-    ASTnode* ast_node = malloc(sizeof(ASTnode));
-
-    if (curr_tok == ID){
-        //ast-print
-        ast_node->ntype = IDENTIFIER;
-        ast_node->nameF = malloc(strlen(lexeme) + 1);
-        strcpy(ast_node->nameF, lexeme);
-
-        if (chk_decl_flag){
-            currentID = lexeme;
-            bool found = findFunctionOrVariableInAllScopesByNameAndType(symbolTable, currentID, "int variable");
-            if (found){
-                match(ID);
-                return ast_node;
-            }
-            else{
-                error("variable has not been declared");
-            }
-        }
-        else{
-            match(ID);
-            return ast_node;
-        }
-    }
-    else if(curr_tok == INTCON) {
-        //ast-print
-        ast_node->ntype = INTCONST;
-        ast_node->num = malloc(sizeof(int));
-        *(ast_node->num) = atoi(lexeme);
-
-        //add intcon into symbol table with tmpCount at end of name
-
-        match(INTCON);
-    }
-    else{
-        error("invalid assignment right hand side");
-    }
-}
-*/
-
-void arithOPAS(){
-    if (curr_tok == opADD){
-        match(opADD);
-    }
-    else if (curr_tok == opSUB){
-        match(opSUB);
-    }
-    else{
-        error("unexpected operator, expected addition or subtraction");
-    }
-}
-
 ASTnode* factor(){
-    ASTnode* ast_node = malloc(sizeof(ASTnode));
+    ASTnode* ast_node = createASTNode();
     if (curr_tok == ID){
         //ast-print
         ast_node->ntype = IDENTIFIER;
@@ -289,7 +236,7 @@ ASTnode* term_tail(ASTnode* overallNode){
 
         //only recurse if more nodes
         if (curr_tok == opMUL || curr_tok == opDIV){
-            ASTnode* newNode = malloc(sizeof(ASTnode));
+            ASTnode* newNode = createASTNode();
             newNode->child0 = overallNode;
             newNode = term_tail(newNode);
             return newNode;
@@ -303,7 +250,7 @@ ASTnode* term_tail(ASTnode* overallNode){
 
         //only recurse if more nodes
         if (curr_tok == opMUL || curr_tok == opDIV){
-            ASTnode* newNode = malloc(sizeof(ASTnode));
+            ASTnode* newNode = createASTNode();
             newNode->child0 = overallNode;
             newNode = term_tail(newNode);
             return newNode;
@@ -315,9 +262,24 @@ ASTnode* term_tail(ASTnode* overallNode){
 }
 
 ASTnode* term(){
-    ASTnode* ast_node = malloc(sizeof(ASTnode));
-    ast_node->child0 = factor();
+    ASTnode* ast_node = createASTNode();
+    ASTnode* someNode = factor();
+
+    //TODO might need to refactor this
+
+    //if its uminus it makes ast_node remain as DUMMY
+    if (someNode->ntype == UMINUS){
+        ast_node = someNode;
+    }
+    else{
+         ast_node->child0 = someNode;
+    }
+
     ast_node = term_tail(ast_node);
+
+    if ((someNode->ntype == IDENTIFIER || someNode->ntype == INTCONST) && ast_node->ntype == DUMMY){
+        ast_node = someNode;
+    }
     return ast_node;
 }
 
@@ -331,21 +293,17 @@ ASTnode* getChild(ASTnode* node){
 }
 
 ASTnode* arith_exp_tail(ASTnode* overallNode){
-    //check at the start if its a dummy ntype then term only found an ID. if its MUL or DIV then it is a multiple operators on operands.
-    //if its dummy then set the ntype here and child1
-    //if its MUL or DIV then we need to create a new node set overallNode as child0 set ntype and set child1 to what we find here
     if (curr_tok == opADD){
         if (overallNode->ntype == DUMMY){
             overallNode->ntype = ADD;
             match(opADD);
         
-            //will prob have to do same thing as above after term is done
             ASTnode* someNode = term();
             overallNode->child1 = getChild(someNode);
 
             //only recurse if more nodes
             if (curr_tok == opADD || curr_tok == opSUB){
-                ASTnode* newNode = malloc(sizeof(ASTnode));
+                ASTnode* newNode = createASTNode();
                 newNode->child0 = overallNode;
                 newNode = arith_exp_tail(newNode);
                 return newNode;
@@ -353,24 +311,61 @@ ASTnode* arith_exp_tail(ASTnode* overallNode){
             return overallNode;
         }
         else{
-            ASTnode* newHeadNode = malloc(sizeof(ASTnode));
+            ASTnode* newHeadNode = createASTNode();
+            newHeadNode->ntype = ADD;
+            match(opADD);
             newHeadNode->child0 = overallNode;
-            printf("not implemented\n");
+
+            //get child1
+            ASTnode* someNode = term();
+            newHeadNode->child1 = getChild(someNode);
+
+            if (curr_tok == opADD || curr_tok == opSUB){
+                ASTnode* newNode = createASTNode();
+                newNode->child0 = newHeadNode;
+                newNode = arith_exp_tail(newNode);
+                return newNode;
+            }
+            return newHeadNode;
         }
-        
     }
     else if (curr_tok == opSUB){
-        match(opSUB);
+        if (overallNode->ntype == DUMMY){
+            overallNode->ntype = SUB;
+            match(opSUB);
+        
+            ASTnode* someNode = term();
+            overallNode->child1 = getChild(someNode);
 
-        //will prob have to do same thing as above after term is done
-        term();
+            //only recurse if more nodes
+            if (curr_tok == opADD || curr_tok == opSUB){
+                ASTnode* newNode = createASTNode();
+                newNode->child0 = overallNode;
+                newNode = arith_exp_tail(newNode);
+                return newNode;
+            }
+            return overallNode;
+        }
+        else{
+            ASTnode* newHeadNode = createASTNode();
+            newHeadNode->ntype = SUB;
+            match(opSUB);
+            newHeadNode->child0 = overallNode;
 
-        //only recurse if more nodes
-        if (curr_tok == opADD || curr_tok == opSUB){
-            ASTnode* newNode = malloc(sizeof(ASTnode));
-            arith_exp_tail(newNode);
+            //get child1
+            ASTnode* someNode = term();
+            newHeadNode->child1 = getChild(someNode);
+
+            if (curr_tok == opADD || curr_tok == opSUB){
+                ASTnode* newNode = createASTNode();
+                newNode->child0 = newHeadNode;
+                newNode = arith_exp_tail(newNode);
+                return newNode;
+            }
+            return newHeadNode;
         }
     }
+    return overallNode;
     //can be empty
 }
 
@@ -388,7 +383,7 @@ match "=" from "ID =" then match ID or INT to end up matching SEMI to have "ID =
 */
 ASTnode* assg_stmt() {
     //initalize ast node
-    ASTnode* ast_node = malloc(sizeof(ASTnode));
+    ASTnode* ast_node = createASTNode();
     ast_node->ntype = ASSG;
     ast_node->nameF = malloc(strlen(currentID) + 1);
     strcpy(ast_node->nameF, currentID);
@@ -427,7 +422,7 @@ else if it contains an id or integer then "return ID || INTCON"
 */
 ASTnode* return_stmt(){
     //initialize ast node
-    ASTnode* return_ast = malloc(sizeof(ASTnode));
+    ASTnode* return_ast = createASTNode();
     return_ast->ntype = RETURN;
 
     match(kwRETURN);
@@ -476,45 +471,42 @@ NodeType relop(){
     }
 }
 
-void opt_and(){
-    if (curr_tok == opAND){
-        match(opAND);
-        bool_exp();
+void opt_and(ASTnode** node) {
+    while (curr_tok == opAND) {
+        match(opAND);  // Match the AND token and advance.
+        ASTnode* newNode = createASTNode();
+        newNode->ntype = AND;
+        newNode->child0 = *node;  // The existing node becomes the left child.
+        newNode->child1 = bool_exp2();  // Parse the next part as the right child.
+        *node = newNode;  // Update the node pointer to the new node.
     }
-    //can be empty
 }
 
-void bool_exp1(){
-    bool_exp2();
-    opt_and();
+ASTnode* bool_exp1() {
+    ASTnode* node = bool_exp2();  // Start with the first part of the expression.
+    opt_and(&node);  // Pass the address of the pointer to modify it.
+    return node;
 }
 
-void opt_or(){
-    if (curr_tok == opOR){
-        match(opOR);
-        bool_exp();
+void opt_or(ASTnode** node) {
+    while (curr_tok == opOR) {
+        match(opOR);  // Match the OR token and advance.
+        ASTnode* newNode = createASTNode();
+        newNode->ntype = OR;
+        newNode->child0 = *node;  // The existing node becomes the left child.
+        newNode->child1 = bool_exp1();  // Parse the next part as the right child.
+        *node = newNode;  // Update the node pointer to the new node.
     }
-    //can be empty
 }
 
-ASTnode* bool_exp(){
-    bool_exp1();
-    opt_or();
-    return NULL;
+ASTnode* bool_exp() {
+    ASTnode* node = bool_exp1();  // Start with the first part of the expression.
+    opt_or(&node);  // Pass the address of the pointer to modify it.
+    return node;
 }
-
-/*
-ASTnode* bool_exp(){
-    ASTnode* exp_ast = malloc(sizeof(ASTnode));
-    exp_ast->child0 = arith_exp(); 
-    exp_ast->ntype = relop(); 
-    exp_ast->child1 = arith_exp();
-    return exp_ast;
-}
-*/
 
 ASTnode* bool_exp2(){
-    ASTnode* exp_ast = malloc(sizeof(ASTnode));
+    ASTnode* exp_ast = createASTNode();
     exp_ast->child0 = arith_exp(); 
     exp_ast->ntype = relop(); 
     exp_ast->child1 = arith_exp();
@@ -522,7 +514,7 @@ ASTnode* bool_exp2(){
 }
 
 ASTnode* if_stmt(){
-    ASTnode* if_ast = malloc(sizeof(ASTnode));
+    ASTnode* if_ast = createASTNode();
     match(kwIF);
     if_ast->ntype = IF;
     match(LPAREN);
@@ -546,7 +538,7 @@ ASTnode* if_stmt(){
 
 ASTnode* while_stmt(){
     //initalize ast node
-    ASTnode* while_ast = malloc(sizeof(ASTnode));
+    ASTnode* while_ast = createASTNode();
     while_ast->ntype = WHILE;
 
     match(kwWHILE);
@@ -619,7 +611,7 @@ ASTnode* opt_stmt_list(){
 
         //set last element to new asmt_ast
         if (stmt_list_hd == NULL) {
-            stmt_list_hd = malloc(sizeof(ASTnode));
+            stmt_list_hd = createASTNode();
             stmt_list_hd->ntype = STMT_LIST;
             // First statement in the list
             stmt_list_hd->child0 = asmt_ast; 
@@ -628,7 +620,7 @@ ASTnode* opt_stmt_list(){
             while(cur->child1 != NULL){
                 cur = cur->child1;
             }
-            cur->child1 = malloc(sizeof(ASTnode));
+            cur->child1 = createASTNode();
             cur->child1->ntype = STMT_LIST;
             cur->child1->child0 = asmt_ast;
         }
@@ -683,7 +675,7 @@ void type(){
 }
 
 ASTnode* func_defn(){
-    ASTnode* ast = malloc(sizeof(ASTnode));
+    ASTnode* ast = createASTNode();
     ast->ntype = FUNC_DEF;
     ast->nameF = currentID;
     int* argCount = malloc(sizeof(int));

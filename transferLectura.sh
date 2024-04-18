@@ -1,0 +1,1 @@
+scp -r *.c *.h Makefile tests/ gilurias0922@lectura.cs.arizona.edu:~/csc/453/ms/8/

@@ -4,6 +4,29 @@
 #include <string.h>
 
 
+ASTnode* createASTNode() {
+    // Allocate memory for a new ASTnode
+    ASTnode* node = (ASTnode*) malloc(sizeof(ASTnode));
+    
+    // Check if malloc was successful
+    if (node == NULL) {
+        return NULL;  // Return NULL if memory allocation failed
+    }
+
+    // Initialize fields
+    node->ntype = 0;          // Assuming NodeType is an enum, initializing to 0 or a default value
+    node->nameF = NULL;       // Initializing to NULL
+    node->st_ref = NULL;      // Initializing to NULL
+    node->num = NULL;         // Initializing to NULL
+    node->child0 = NULL;      // Initializing to NULL
+    node->child1 = NULL;      // Initializing to NULL
+    node->child2 = NULL;      // Initializing to NULL
+    node->code = NULL;        // Initializing to NULL
+    node->place = NULL;       // Initializing to NULL
+
+    return node;  // Return the newly created node
+}
+
 NodeType ast_node_type(void* ptr) {
     ASTnode* ast = (ASTnode*) ptr;
     if (ast == NULL){

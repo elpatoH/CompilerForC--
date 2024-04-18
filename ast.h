@@ -233,4 +233,6 @@ void* stmt_return_expr(void *ptr);
  */
 void print_ast(void *tree);
 
+ASTnode* createASTNode();
+
 #endif  /* __AST_H__ */

@@ -8,7 +8,7 @@
         "type": "cppdbg",
         "request": "launch",
         "program": "/Users/danig/code/csc/453/ms/8/compile",
-        "args": ["--chk_decl", "--gen_code"],
+        "args": ["--print_ast", ""],
         "stopAtEntry": false,
         "cwd": "${fileDirname}",
         "environment": [],
