@@ -237,32 +237,68 @@ ASTnode* factor(){
 
 ASTnode* term_tail(ASTnode* overallNode){
     if (curr_tok == opMUL){
-        overallNode->ntype = MUL;
-        match(opMUL);
-        overallNode->child1 = factor();
+        if (overallNode->ntype == UMINUS){
+            ASTnode* popo = createASTNode();
+            popo->ntype = MUL;
+            match(opMUL);
+            popo->child0 = overallNode;
+            popo->child1 = factor();
 
-        //only recurse if more nodes
-        if (curr_tok == opMUL || curr_tok == opDIV){
-            ASTnode* newNode = createASTNode();
-            newNode->child0 = overallNode;
-            newNode = term_tail(newNode);
-            return newNode;
+            //only recurse if more nodes
+            if (curr_tok == opMUL || curr_tok == opDIV){
+                ASTnode* newNode = createASTNode();
+                newNode->child0 = popo;
+                newNode = term_tail(newNode);
+                return newNode;
+            }
+            return popo;
         }
-        return overallNode;
+        else{
+            overallNode->ntype = MUL;
+            match(opMUL);
+            overallNode->child1 = factor();
+
+            //only recurse if more nodes
+            if (curr_tok == opMUL || curr_tok == opDIV){
+                ASTnode* newNode = createASTNode();
+                newNode->child0 = overallNode;
+                newNode = term_tail(newNode);
+                return newNode;
+            }
+            return overallNode;
+        }
     }
     else if (curr_tok == opDIV){
-        overallNode->ntype = DIV;
-        match(opDIV);
-        overallNode->child1 = factor();
+        if (overallNode->ntype == UMINUS){
+            ASTnode* popo = createASTNode();
+            popo->ntype = DIV;
+            match(opDIV);
+            popo->child0 = overallNode;
+            popo->child1 = factor();
 
-        //only recurse if more nodes
-        if (curr_tok == opMUL || curr_tok == opDIV){
-            ASTnode* newNode = createASTNode();
-            newNode->child0 = overallNode;
-            newNode = term_tail(newNode);
-            return newNode;
+            //only recurse if more nodes
+            if (curr_tok == opMUL || curr_tok == opDIV){
+                ASTnode* newNode = createASTNode();
+                newNode->child0 = popo;
+                newNode = term_tail(newNode);
+                return newNode;
+            }
+            return popo;
         }
-        return overallNode;
+        else{
+            overallNode->ntype = DIV;
+            match(opDIV);
+            overallNode->child1 = factor();
+
+            //only recurse if more nodes
+            if (curr_tok == opMUL || curr_tok == opDIV){
+                ASTnode* newNode = createASTNode();
+                newNode->child0 = overallNode;
+                newNode = term_tail(newNode);
+                return newNode;
+            }
+            return overallNode;
+        }
     }
     return overallNode;
     //can be empty
