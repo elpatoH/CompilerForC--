@@ -49,10 +49,6 @@ void visit(ASTnode *node)
 
 void codeGen_expr(ASTnode *e)
 {
-	// if (e->nameF != NULL){
-	//   char* popo = operationName(e->ntype);
-	//   printf("HERERERER %s : %s\n\n\n", popo, e->nameF);
-	// }
 	switch (e->ntype)
 	{
 	case FUNC_DEF:
@@ -261,8 +257,15 @@ void codeGen_expr(ASTnode *e)
 		int *noOpMine = malloc(sizeof(int));
 		*noOpMine = 1;
 
-		Quad *perro = newinstr(ASSG, node->code->dest, noOpMine, LHSSTRef);
-		e->code->next = perro;
+		// REDO
+		// when we have operators the RHS is stored in node.place NOT node.code.dest
+		Quad *perro = newinstr(ASSG, node->place, noOpMine, LHSSTRef);
+
+		Quad* temp = e->code;
+		while(temp->next != NULL){
+			temp = temp->next;
+		}
+		temp->next = perro;
 
 		// save location where it is being saved
 		//  and add new inst for assignemnt to
@@ -371,14 +374,43 @@ void codeGen_expr(ASTnode *e)
 		InfoNode *stREF = findVariableInAllScopes(symbolTable, e->nameF);
 		if (stREF == NULL)
 			return;
+		e->place = stREF;
 		e->code = newinstr(VAR, NULL, NULL, stREF);
+		break;
+	}
+	case UMINUS:
+	{
+		ASTnode* operand1 = (ASTnode*) expr_operand_1(e);
+		codeGen_expr(operand1);
+
+		e->place = newtemp("INTCON");
+		e->code = operand1->code;
+
+		e->code->next = newinstr(UMINUS, operand1, NULL, e->place);
+		break;
+	}
+	case MUL:
+	case DIV:
+	case SUB:
+	case ADD:
+	{
+		ASTnode* operand1 = (ASTnode*) expr_operand_1(e);
+		ASTnode* operand2 = (ASTnode*) expr_operand_2(e);
+		codeGen_expr(operand1);
+		codeGen_expr(operand2);
+
+		e->place = newtemp("INTCON");
+		e->code = operand1->code;
+
+		e->code->next = operand2->code;
+		e->code->next->next = newinstr(e->ntype, operand1, operand2, e->place);
 		break;
 	}
 	default:
 	{
 		char *perro = operationName(e->ntype);
 		fprintf(stderr, "*** Unrecognized statement: %s\n", perro);
-		return;
+		exit(1);
 	}
 	}
 }

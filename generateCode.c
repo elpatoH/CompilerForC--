@@ -137,11 +137,152 @@ void printQuad(Quad *quad)
 			case LT: printf("\tslt $t5, $t3, $t4\n"); break;
 			case GE: printf("\tsge $t5, $t3, $t4\n"); break;
 			case GT: printf("\tsgt $t5, $t3, $t4\n"); break;
-			default: printf("not valid comparison\n"); exit(2);
+			default: fprintf(stderr, "not valid comparison\n"); exit(2);
 		}
+		
 		Quad* dest = (Quad*) quad->dest;
 		int* labelNumber = (int*) dest->src1;
 		printf("\tbnez $t5, label_%d\n", *labelNumber);
+		break;
+	}
+	case MUL:
+	case ADD:
+	case SUB:		
+	case DIV: {
+		ASTnode* opr1 = (ASTnode*) quad->src1;
+		Quad* opr1Quad = opr1->code;
+		InfoNode* opr1Node = (InfoNode*) opr1Quad->dest;
+
+		ASTnode* opr2 = (ASTnode*) quad->src2;
+		Quad* opr2Quad = opr2->code;
+		InfoNode* opr2Node = (InfoNode*) opr2Quad->dest;
+
+		/* - now for opr2 in $t5 - */
+
+		printf("\tlw $t5, ");
+		//global no location
+		if (strcmp(opr1Node->info, "global") == 0){
+			printf("_%s\n", opr1Node->name);
+		}
+
+		//int variable in the negs init +4
+		else if(strcmp(opr1Node->info, "") == 0){
+			int* opr1Location = opr1Node->location;
+			int opr1ActualLocation = 4*(*opr1Location) + 4;
+			printf("-%d($fp)\n", opr1ActualLocation);
+		}
+
+		//param in the positives init +8
+		else if (strcmp(opr1Node->info, "arg") == 0){
+			int *argNum = opr1Node->argCount;
+			int argLocation = *argNum * 4 + 8;
+			printf("%d($fp) #useless?\n", argLocation);
+		}
+
+		//imm
+		else if (strcmp(opr1Node->info, "temp") == 0){
+			char *name = opr1Node->name;
+			char *substring = &name[5];
+			int number = atoi(substring);
+			int location = (number * 4) + 4;
+			printf("-%d($fp)\n", location);
+		}
+
+		/* - now for opr2 in $t6 - */
+
+		printf("\tlw $t6, ");
+		//global no location
+		if (strcmp(opr2Node->info, "global") == 0){
+			printf("_%s\n", opr2Node->name);
+		}
+
+		//int variable in the negs init +4
+		else if(strcmp(opr2Node->info, "") == 0){
+			int* opr2Location = opr2Node->location;
+			int opr2ActualLocation = 4*(*opr2Location) + 4;
+			printf("-%d($fp)\n", opr2ActualLocation);
+		}
+
+		//param in the positives init +8
+		else if (strcmp(opr2Node->info, "arg") == 0){
+			int *argNum = opr2Node->argCount;
+			int argLocation = *argNum * 4 + 8;
+			printf("%d($fp) #useless?\n", argLocation);
+		}
+
+		//imm
+		else if (strcmp(opr2Node->info, "temp") == 0){
+			char *name = opr2Node->name;
+			char *substring = &name[5];
+			int number = atoi(substring);
+			int location = (number * 4) + 4;
+			printf("-%d($fp)\n", location);
+		}
+
+		/* - now operate on operands - */
+
+		switch (quad->op){
+			case MUL: printf("\tmulo $t7, $t5, $t6\n"); break;
+			case ADD: printf("\tadd $t7, $t5, $t6\n"); break;
+			case SUB: printf("\tsub $t7, $t5, $t6\n"); break;			
+			case DIV: printf("\tdiv $t7, $t5, $t6\n"); break;
+			default: fprintf(stderr, "not valid operator\n"); exit(2);
+		}
+
+		InfoNode* dest = (InfoNode*) quad->dest;
+		char *name = dest->name;
+		char *substring = &name[5];
+		int number = atoi(substring);
+		int tempLocation = (number * 4) + 4;
+		printf("	sw $t7, -%d($fp)\n\n", tempLocation);
+
+		break;
+	}
+	case UMINUS:{
+		ASTnode* opr1 = (ASTnode*) quad->src1;
+		Quad* opr1Quad = opr1->code;
+		InfoNode* opr1Node = (InfoNode*) opr1Quad->dest;
+
+		/* - now for opr2 in $t5 - */
+
+		printf("\tlw $t5, ");
+		//global no location
+		if (strcmp(opr1Node->info, "global") == 0){
+			printf("_%s\n", opr1Node->name);
+		}
+
+		//int variable in the negs init +4
+		else if(strcmp(opr1Node->info, "") == 0){
+			int* opr1Location = opr1Node->location;
+			int opr1ActualLocation = 4*(*opr1Location) + 4;
+			printf("-%d($fp)\n", opr1ActualLocation);
+		}
+
+		//param in the positives init +8
+		else if (strcmp(opr1Node->info, "arg") == 0){
+			int *argNum = opr1Node->argCount;
+			int argLocation = *argNum * 4 + 8;
+			printf("%d($fp) #useless?\n", argLocation);
+		}
+
+		//imm
+		else if (strcmp(opr1Node->info, "temp") == 0){
+			char *name = opr1Node->name;
+			char *substring = &name[5];
+			int number = atoi(substring);
+			int location = (number * 4) + 4;
+			printf("-%d($fp)\n", location);
+		}
+
+		printf("\tneg $t7, $t5\n");
+
+		InfoNode* dest = (InfoNode*) quad->dest;
+		char *name = dest->name;
+		char *substring = &name[5];
+		int number = atoi(substring);
+		int tempLocation = (number * 4) + 4;
+		printf("	sw $t7, -%d($fp)\n\n", tempLocation);
+
 		break;
 	}
 	case GOTO:{
@@ -157,8 +298,8 @@ void printQuad(Quad *quad)
 	}
 	default:
 	{
-		printf("not yet implemented: %s\n", operationName(quad->op));
-		exit(0);
+		fprintf(stderr, "not yet implemented: %s\n", operationName(quad->op));
+		exit(2);
 	}
 	}
 
@@ -288,6 +429,8 @@ void printASSG(Quad *quad)
 	int *myNoOp = (int *)quad->src2;
 	if (myNoOp != NULL)
 	{
+		//src1 is right hand side, 
+		//dest is left hand side
 		InfoNode *node = (InfoNode *)quad->src1;
 		char *name = node->name;
 		char *substring = &name[5];
@@ -324,7 +467,7 @@ void printASSG(Quad *quad)
 			}
 			else
 			{
-				printf("    lw $t1, -%d($fp)\n", location);
+				printf("    lw $t1, -%d($fp) # name: %s\n", location, name);
 			}
 		}
 

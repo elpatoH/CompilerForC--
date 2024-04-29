@@ -190,6 +190,7 @@ static void print_ast_formatted(void *tree, int n, int nl) {
   default:
     fprintf(stderr, "*** [%s] Unrecognized syntax tree node type %d\n",
 	    __func__, ntype);
+      exit(1);
   }
 }
 
