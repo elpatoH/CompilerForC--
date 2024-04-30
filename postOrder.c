@@ -383,10 +383,11 @@ void codeGen_expr(ASTnode *e)
 		ASTnode* operand1 = (ASTnode*) expr_operand_1(e);
 		codeGen_expr(operand1);
 
+		//might want to change to e.place = operand.place
 		e->place = newtemp("INTCON");
 		e->code = operand1->code;
 
-		e->code->next = newinstr(UMINUS, operand1, NULL, e->place);
+		e->code->next = newinstr(UMINUS, operand1->place, NULL, e->place);
 		break;
 	}
 	case MUL:
@@ -402,8 +403,19 @@ void codeGen_expr(ASTnode *e)
 		e->place = newtemp("INTCON");
 		e->code = operand1->code;
 
-		e->code->next = operand2->code;
-		e->code->next->next = newinstr(e->ntype, operand1, operand2, e->place);
+		Quad *lastPointer = e->code;
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		lastPointer->next = operand2->code;
+
+		lastPointer = e->code;
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		lastPointer->next = newinstr(e->ntype, operand1->place, operand2->place, e->place);
 		break;
 	}
 	default:
@@ -421,13 +433,28 @@ void codeGen_bool(ASTnode* e, Quad* trueDst, Quad* falseDst){
 	codeGen_expr(opr1);
 	codeGen_expr(opr2);
 
-	//may want to change truedst to just strings for easier access
 	e->code = opr1->code;
-	e->code->next = opr2->code;
-	Quad* if_instr_true = newinstr(e->ntype, opr1, opr2, trueDst);
-	e->code->next->next = if_instr_true;
+
+	Quad *lastPointer = e->code;
+	while (lastPointer->next != NULL)
+	{
+		lastPointer = lastPointer->next;
+	}
+	lastPointer->next = opr2->code;
+
+	while (lastPointer->next != NULL)
+	{
+		lastPointer = lastPointer->next;
+	}
+	Quad* if_instr_true = newinstr(e->ntype, opr1->place, opr2->place, trueDst);
+	lastPointer->next = if_instr_true;
+
+	while (lastPointer->next != NULL)
+	{
+		lastPointer = lastPointer->next;
+	}
 	Quad* if_instr_goto = newinstr(GOTO, NULL, NULL, falseDst);
-	e->code->next->next->next = if_instr_goto;
+	lastPointer->next = if_instr_goto;
 }
 
 InfoNode *newtemp(char *type)

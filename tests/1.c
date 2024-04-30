@@ -1,15 +1,10 @@
-/* codegen: expressions containing at most one operator */
-
-/* ---REMOVE TO COMPILE AS C CODE---
-#include <stdio.h>
-void println(int x) { printf("%d\n", x); }
----REMOVE TO COMPILE AS C CODE--- */
+/* codegen: recursion */
 
 int main() {
     int x;
-
-    //FIX THIS neg at start dissapears
-    x = -123 - 123;
+    x = 100;
+    if (x * x / x < 10 * x / x){
+        x = 9;
+    }
     println(x);
-
 }

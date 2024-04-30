@@ -61,13 +61,8 @@ void printQuad(Quad *quad)
 	case LT:
 	case GE:
 	case GT:{
-		ASTnode* opr1 = (ASTnode*) quad->src1;
-		Quad* opr1Quad = opr1->code;
-		InfoNode* opr1Node = (InfoNode*) opr1Quad->dest;
-
-		ASTnode* opr2 = (ASTnode*) quad->src2;
-		Quad* opr2Quad = opr2->code;
-		InfoNode* opr2Node = (InfoNode*) opr2Quad->dest;
+		InfoNode* opr1Node = (InfoNode*) quad->src1;
+		InfoNode* opr2Node = (InfoNode*) quad->src2;
 
 		printf("\tlw $t3, ");
 		//global no location
@@ -149,13 +144,8 @@ void printQuad(Quad *quad)
 	case ADD:
 	case SUB:		
 	case DIV: {
-		ASTnode* opr1 = (ASTnode*) quad->src1;
-		Quad* opr1Quad = opr1->code;
-		InfoNode* opr1Node = (InfoNode*) opr1Quad->dest;
-
-		ASTnode* opr2 = (ASTnode*) quad->src2;
-		Quad* opr2Quad = opr2->code;
-		InfoNode* opr2Node = (InfoNode*) opr2Quad->dest;
+		InfoNode* opr1Node = (InfoNode*) quad->src1;
+		InfoNode* opr2Node = (InfoNode*) quad->src2;
 
 		/* - now for opr2 in $t5 - */
 
@@ -239,9 +229,7 @@ void printQuad(Quad *quad)
 		break;
 	}
 	case UMINUS:{
-		ASTnode* opr1 = (ASTnode*) quad->src1;
-		Quad* opr1Quad = opr1->code;
-		InfoNode* opr1Node = (InfoNode*) opr1Quad->dest;
+		InfoNode* opr1Node = (InfoNode*) quad->src1;
 
 		/* - now for opr2 in $t5 - */
 
@@ -274,7 +262,7 @@ void printQuad(Quad *quad)
 			printf("-%d($fp)\n", location);
 		}
 
-		printf("\tneg $t7, $t5\n");
+		printf("\tsub $t7, $zero, $t5\n");
 
 		InfoNode* dest = (InfoNode*) quad->dest;
 		char *name = dest->name;
