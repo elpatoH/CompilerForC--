@@ -3,7 +3,7 @@
 int main() {
     int x;
     x = 100;
-    if (x * x / x < 10 * x / x){
+    if (x < 1000 || 10 > 1){
         x = 9;
     }
     println(x);

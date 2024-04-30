@@ -418,6 +418,11 @@ void codeGen_expr(ASTnode *e)
 		lastPointer->next = newinstr(e->ntype, operand1->place, operand2->place, e->place);
 		break;
 	}
+	case AND:
+	{
+		fprintf(stderr, "A LA VERGA!!\n");
+		break;
+	}
 	default:
 	{
 		char *perro = operationName(e->ntype);
@@ -428,33 +433,98 @@ void codeGen_expr(ASTnode *e)
 }
 
 void codeGen_bool(ASTnode* e, Quad* trueDst, Quad* falseDst){
-	ASTnode* opr1 = expr_operand_1(e);
-	ASTnode* opr2 = expr_operand_2(e);
-	codeGen_expr(opr1);
-	codeGen_expr(opr2);
+	switch(e->ntype){
+	case OR:{
+		Quad* label = newlabel();
+		ASTnode* branch1 = expr_operand_1(e);
+		ASTnode* branch2 = expr_operand_2(e);
 
-	e->code = opr1->code;
+		//if true, jump to trueDst.
+		codeGen_bool(branch1, trueDst, label);
+		
+		//the evaluation continues only if the first was false.
+		codeGen_bool(branch2, trueDst, falseDst);
 
-	Quad *lastPointer = e->code;
-	while (lastPointer->next != NULL)
-	{
-		lastPointer = lastPointer->next;
+		e->code = branch1->code;
+
+		Quad *lastPointer = e->code;
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		lastPointer->next = label;
+
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		lastPointer->next = branch2->code;
+		break;
 	}
-	lastPointer->next = opr2->code;
+	case AND:{
+		Quad* label = newlabel();
+		ASTnode* branch1 = expr_operand_1(e);
+		ASTnode* branch2 = expr_operand_2(e);
+		codeGen_bool(branch1, label, falseDst);
+		codeGen_bool(branch2, trueDst, falseDst);
 
-	while (lastPointer->next != NULL)
-	{
-		lastPointer = lastPointer->next;
-	}
-	Quad* if_instr_true = newinstr(e->ntype, opr1->place, opr2->place, trueDst);
-	lastPointer->next = if_instr_true;
+		e->code = branch1->code;
 
-	while (lastPointer->next != NULL)
-	{
-		lastPointer = lastPointer->next;
+		Quad *lastPointer = e->code;
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		lastPointer->next = label;
+
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		lastPointer->next = branch2->code;
+		break;
 	}
-	Quad* if_instr_goto = newinstr(GOTO, NULL, NULL, falseDst);
-	lastPointer->next = if_instr_goto;
+	case EQ:
+	case NE:
+	case LE:
+	case LT:
+	case GE:
+	case GT:{
+		ASTnode* opr1 = expr_operand_1(e);
+		ASTnode* opr2 = expr_operand_2(e);
+		codeGen_expr(opr1);
+		codeGen_expr(opr2);
+
+		e->code = opr1->code;
+
+		Quad *lastPointer = e->code;
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		lastPointer->next = opr2->code;
+
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		Quad* if_instr_true = newinstr(e->ntype, opr1->place, opr2->place, trueDst);
+		lastPointer->next = if_instr_true;
+
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+		Quad* if_instr_goto = newinstr(GOTO, NULL, NULL, falseDst);
+		lastPointer->next = if_instr_goto;
+		break;
+	}
+	default:{
+		fprintf(stderr, "not valid boolean operator.\n");
+		exit(1);
+	}
+	}
+	
 }
 
 InfoNode *newtemp(char *type)
