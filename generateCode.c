@@ -273,6 +273,18 @@ void printQuad(Quad *quad)
 
 		break;
 	}
+	case RETRIEVE:{
+		InfoNode* something = (InfoNode*)quad->dest;
+		char *name = something->name;
+		char *substring = &name[5];
+		int number = atoi(substring);
+		int tempLocation = (number * 4) + 4;
+
+		printf("\tadd $t0, $zero, $v0\n");
+		printf("\tsw $t0 -%d($fp)\n", tempLocation);
+
+		break;
+	}
 	case GOTO:{
 		Quad* dest = (Quad*) quad->dest;
 		int* labelNumber = (int*) dest->src1;
@@ -342,6 +354,42 @@ void printLEAVE(Quad *quad)
 	int tempC = getTemporaryCount(symbolTable);
 	int frame_size = 4 * ((*paramsC) + tempC) + 8;
 
+	InfoNode* opr1Node = (InfoNode*) quad->dest;
+
+	if (opr1Node != NULL){
+
+	/* - now for opr2 in $t5 - */
+
+	printf("\tlw $v0, ");
+	//global no location
+	if (strcmp(opr1Node->info, "global") == 0){
+		printf("_%s\n", opr1Node->name);
+	}
+
+	//int variable in the negs init +4
+	else if(strcmp(opr1Node->info, "") == 0){
+		int* opr1Location = opr1Node->location;
+		int opr1ActualLocation = 4*(*opr1Location) + 4;
+		printf("-%d($fp)\n", opr1ActualLocation);
+	}
+
+	//param in the positives init +8
+	else if (strcmp(opr1Node->info, "arg") == 0){
+		int *argNum = opr1Node->argCount;
+		int argLocation = *argNum * 4 + 8;
+		printf("%d($fp) #useless?\n", argLocation);
+	}
+
+	//imm
+	else if (strcmp(opr1Node->info, "temp") == 0){
+		char *name = opr1Node->name;
+		char *substring = &name[5];
+		int number = atoi(substring);
+		int location = (number * 4) + 4;
+		printf("-%d($fp)\n", location);
+	}
+	}
+
 	printf("\n    move $sp, $fp\n");
 	printf("    lw $ra, 0($sp)\n");
 	printf("    lw $fp, 4($sp)\n");
@@ -385,27 +433,35 @@ void printCALL(Quad *quad)
 
 void printPARAM(Quad *quad)
 {
-	InfoNode *node = (InfoNode *)quad->src1;
-	if (node == NULL)
-		return;
-	if (strcmp(node->info, "temp") == 0)
-	{
-		char *name = node->name;
+	InfoNode *opr1Node = (InfoNode *)quad->src1;
+
+	printf("\tlw $t0, ");
+	//global no location
+	if (strcmp(opr1Node->info, "global") == 0){
+		printf("_%s\n", opr1Node->name);
+	}
+
+	//int variable in the negs init +4
+	else if(strcmp(opr1Node->info, "") == 0){
+		int* opr1Location = opr1Node->location;
+		int opr1ActualLocation = 4*(*opr1Location) + 4;
+		printf("-%d($fp)\n", opr1ActualLocation);
+	}
+
+	//param in the positives init +8
+	else if (strcmp(opr1Node->info, "arg") == 0){
+		int *argNum = opr1Node->argCount;
+		int argLocation = *argNum * 4 + 8;
+		printf("%d($fp) #useless?\n", argLocation);
+	}
+
+	//imm
+	else if (strcmp(opr1Node->info, "temp") == 0){
+		char *name = opr1Node->name;
 		char *substring = &name[5];
 		int number = atoi(substring);
 		int location = (number * 4) + 4;
-		printf("    lw $t0, -%d($fp)\n", location);
-	}
-	else if (strcmp(node->type, "int variable") == 0 && strcmp(node->info, "global") == 0)
-	{
-		printf("    lw $t0, _%s\n", node->name);
-	}
-	// its an int variable and its not and argument
-	else if (strcmp(node->type, "int variable") == 0 && strcmp(node->info, "arg") != 0)
-	{
-		InfoNode *stREF = findVariableInScopeAndGetArgCount(symbolTable, node->name);
-		int varLocation = ((*stREF->location) * 4) + 4;
-		printf("    lw $t0, -%d($fp)\n", varLocation);
+		printf("-%d($fp)\n", location);
 	}
 	// get place in stack from symboltable index or something like that
 	printf("    addiu $sp, $sp, -4\n");

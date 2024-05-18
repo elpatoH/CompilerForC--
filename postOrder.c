@@ -259,6 +259,7 @@ void codeGen_expr(ASTnode *e)
 
 		// REDO
 		// when we have operators the RHS is stored in node.place NOT node.code.dest
+		// REDID
 		Quad *perro = newinstr(ASSG, node->place, noOpMine, LHSSTRef);
 
 		Quad* temp = e->code;
@@ -276,11 +277,23 @@ void codeGen_expr(ASTnode *e)
 		ScopeNode *globalScope = getLastScope(symbolTable);
 		InfoNode *stREF = findFunctionInScopeAndGetArgCount(globalScope, current_function_name);
 
-		Quad *leaveQuad = newinstr(LEAVE, stREF, NULL, NULL);
+		//will need to set $v0 somewhere here
+		ASTnode* expr = stmt_return_expr(e);
+		codeGen_expr(expr);
+
+		Quad *leaveQuad = newinstr(LEAVE, stREF, NULL, expr->place);
 		Quad *returnQuad = newinstr(RETURN, stREF, NULL, NULL);
 
-		e->code = leaveQuad;
-		e->code->next = returnQuad;
+		e->code = expr->code;
+
+		Quad *lastPointer = e->code;
+		while (lastPointer->next != NULL)
+		{
+			lastPointer = lastPointer->next;
+		}
+
+		lastPointer->next = leaveQuad;
+		lastPointer->next->next = returnQuad;
 		break;
 	}
 	case FUNC_CALL:
@@ -288,8 +301,8 @@ void codeGen_expr(ASTnode *e)
 		ASTnode *arglist = (ASTnode *)func_call_args(e);
 		codeGen_expr(arglist);
 
-		// if statement to check if return type of func_call is void
-		// if void then no need to set e.place
+		// all functions have return type int
+		e->place = newtemp("INTCON");
 
 		// reverse list so params are in right order
 		Quad *reversedCodeList = NULL;
@@ -325,8 +338,10 @@ void codeGen_expr(ASTnode *e)
 		if (temp == NULL)
 		{
 			e->code = newinstr(CALL, stREF, NULL, NULL);
+			e->code->next = newinstr(RETRIEVE, NULL, NULL, e->place);
 			break;
 		}
+
 		while (temp->next != NULL)
 		{
 			temp = temp->next;
@@ -334,6 +349,12 @@ void codeGen_expr(ASTnode *e)
 		temp->next = newinstr(CALL, stREF, NULL, NULL);
 
 		// retrieve function
+		while (temp->next != NULL)
+		{
+			temp = temp->next;
+		}
+		temp->next = newinstr(RETRIEVE, NULL, NULL, e->place);
+
 		break;
 	}
 	case EXPR_LIST:
@@ -416,11 +437,6 @@ void codeGen_expr(ASTnode *e)
 			lastPointer = lastPointer->next;
 		}
 		lastPointer->next = newinstr(e->ntype, operand1->place, operand2->place, e->place);
-		break;
-	}
-	case AND:
-	{
-		fprintf(stderr, "A LA VERGA!!\n");
 		break;
 	}
 	default:
@@ -613,6 +629,8 @@ char *operationName(NodeType ntype)
 		return "if";
 	case GOTO:
 		return "goto";
+	case RETRIEVE:
+		return "retrieve";
 
 	default:
 		fprintf(stderr, "Unrecognized syntax tree node type %d\n", ntype);
